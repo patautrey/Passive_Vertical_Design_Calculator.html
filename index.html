@@ -20,16 +20,13 @@
     --text-soft: #555;
     --border-soft: #d0d7e2;
   }
-
   * { box-sizing: border-box; }
-
   body {
     margin: 0;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     background: var(--bg);
     color: var(--text-main);
   }
-
   .header-banner {
     background: linear-gradient(90deg, #0b63ce, #27a9ff);
     color: #fff;
@@ -38,37 +35,31 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.18);
     margin-bottom: 20px;
   }
-
   .header-banner h1 {
     margin: 0;
     font-size: 26px;
     letter-spacing: 0.03em;
   }
-
   .header-banner p {
     margin: 4px 0 0 0;
     font-size: 14px;
     opacity: 0.9;
   }
-
   .page {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 16px 40px 16px;
   }
-
   h2 {
     margin-top: 24px;
     margin-bottom: 10px;
     font-size: 20px;
   }
-
   .grid {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
     gap: 18px;
   }
-
   .card {
     background: var(--card);
     border-radius: 10px;
@@ -76,13 +67,11 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     border: 1px solid var(--border-soft);
   }
-
   .card h3 {
     margin-top: 0;
     margin-bottom: 10px;
     font-size: 17px;
   }
-
   .form-row {
     display: flex;
     flex-wrap: wrap;
@@ -90,13 +79,11 @@
     margin-bottom: 8px;
     align-items: center;
   }
-
   .form-row label {
     font-size: 14px;
     color: var(--text-soft);
     min-width: 120px;
   }
-
   .form-row input[type="number"],
   .form-row select {
     padding: 5px 7px;
@@ -105,18 +92,15 @@
     border: 1px solid var(--border-soft);
     min-width: 80px;
   }
-
   .form-row input[type="checkbox"] {
     transform: scale(1.1);
     margin-right: 4px;
   }
-
   .inline-label {
     font-size: 14px;
     color: var(--text-soft);
     margin-right: 10px;
   }
-
   .section-label {
     font-size: 13px;
     font-weight: 600;
@@ -125,7 +109,6 @@
     color: var(--text-soft);
     margin-bottom: 6px;
   }
-
   .badge {
     display: inline-block;
     padding: 2px 7px;
@@ -135,17 +118,14 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
-
   .badge-dx {
     background: #ffe6cc;
     color: #b35a00;
   }
-
   .badge-seaside {
     background: #dff7ff;
     color: #006b8f;
   }
-
   .summary-block {
     background: #f0f2f8;
     padding: 10px 12px;
@@ -153,9 +133,7 @@
     font-size: 14px;
     margin-top: 6px;
   }
-
   .summary-block b { font-weight: 600; }
-
   .warning-block {
     margin-top: 10px;
     padding: 10px 12px;
@@ -165,7 +143,6 @@
     font-size: 13px;
     color: #7a0000;
   }
-
   .ok-block {
     margin-top: 10px;
     padding: 10px 12px;
@@ -175,39 +152,33 @@
     font-size: 13px;
     color: #0f5a33;
   }
-
   .patterns-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 12px;
   }
-
   #azimuthPlot,
   #elevationPlot,
   #pattern3D {
     width: 100%;
     height: 320px;
   }
-
   .table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
     margin-top: 6px;
   }
-
   .table th,
   .table td {
     border: 1px solid #dde2ec;
     padding: 4px 6px;
     text-align: left;
   }
-
   .table th {
     background: #f3f6fb;
     font-weight: 600;
   }
-
   .diagram-container {
     width: 100%;
     height: 260px;
@@ -219,13 +190,11 @@
     color: #8a94a8;
     font-size: 13px;
   }
-
   .footer-note {
     margin-top: 18px;
     font-size: 12px;
     color: #777;
   }
-
   @media (max-width: 900px) {
     .grid { grid-template-columns: minmax(0, 1fr); }
     .patterns-grid { grid-template-columns: minmax(0, 1fr); }
@@ -242,7 +211,6 @@
 <div class="page">
 
   <div class="grid">
-    <!-- LEFT: Controls & Configuration -->
     <div class="card">
       <h3>Antenna Configuration</h3>
 
@@ -352,12 +320,11 @@
       </div>
 
       <div class="summary-block" id="configSummary">
-        Configuration: <span id="configText">No reflector · 1 director · Ground-mounted radial system</span><br>
+        Configuration: <span id="configText">No reflector · 1 director(s) · Ground-mounted radial system</span><br>
         Design frequency: <span id="designFreqLabel">3.550 MHz</span> · Wavelength: <span id="designLambdaLabel">–</span> m
       </div>
     </div>
 
-    <!-- RIGHT: Key Results -->
     <div class="card">
       <h3>Key Performance Metrics</h3>
 
@@ -396,7 +363,6 @@
     </div>
   </div>
 
-  <!-- Element Table & Boom Layout -->
   <h2>Element Geometry & Boom Layout</h2>
   <div class="grid">
     <div class="card">
@@ -411,9 +377,7 @@
             <th>Position (m)</th>
           </tr>
         </thead>
-        <tbody>
-          <!-- Filled by JS -->
-        </tbody>
+        <tbody></tbody>
       </table>
 
       <div class="summary-block">
@@ -430,7 +394,6 @@
     </div>
   </div>
 
-  <!-- Radials & Current Distribution -->
   <h2>Ground System & Current Distribution</h2>
   <div class="grid">
     <div class="card">
@@ -448,7 +411,6 @@
     </div>
   </div>
 
-  <!-- Radiation Patterns -->
   <h2>Radiation Patterns</h2>
   <div class="card">
     <div class="patterns-grid">
@@ -465,7 +427,6 @@
     <div id="pattern3D"></div>
   </div>
 
-  <!-- Teaching / Explanation -->
   <div class="card" style="margin-top:20px;">
     <h3>Design Notes & Interpretation</h3>
     <p class="section-label">DX Turbo Mode</p>
@@ -477,9 +438,8 @@
 
     <p class="section-label">Ground-Reflected Gain vs Seaside Mode</p>
     <p style="font-size:14px; color:var(--text-soft);">
-      By default, patterns use a realistic ground-reflected model with typical soil conductivity and permittivity.
-      When Seaside mode is enabled, the ground reflection coefficient is adjusted toward seawater, greatly enhancing
-      low-angle gain and DX performance, especially on 80 m and 40 m.
+      Normal mode uses realistic inland soil. Seaside mode assumes seawater, greatly enhancing low-angle gain and DX
+      performance, especially on 80 m and 40 m.
     </p>
 
     <p class="section-label">Interpreting TOA, F/B, and ERP</p>
@@ -497,82 +457,40 @@
   </div>
 
 </div>
+
 <script>
-// ------------------------------------------------------------
-// Utility helpers
-// ------------------------------------------------------------
 function metersToFeetInches(m) {
   const totalInches = m * 39.3701;
   const feet = Math.floor(totalInches / 12);
   const inches = totalInches % 12;
   return `${feet} ft ${inches.toFixed(1)} in`;
 }
-
 function db(x) { return 10 * Math.log10(x); }
 function undb(x) { return Math.pow(10, x / 10); }
 
-// ------------------------------------------------------------
-// Main update function
-// ------------------------------------------------------------
 function updateAll() {
-
-  // --- DOM lookups (safe, explicit) ---
-  const fMHzEl = document.getElementById("freqMHz");
-  const lambdaLabel = document.getElementById("lambdaLabel");
-  const designFreqLabel = document.getElementById("designFreqLabel");
-  const designLambdaLabel = document.getElementById("designLambdaLabel");
-  const drivenLambdaLabel = document.getElementById("drivenLambdaLabel");
-
-  const addReflector = document.getElementById("addReflector");
-  const numDirectors = document.getElementById("numDirectors");
-  const directorSpacing = document.getElementById("directorSpacing");
-  const directorLengthFactor = document.getElementById("directorLengthFactor");
-  const reflectorFactor = document.getElementById("reflectorFactor");
-
-  const dxMode = document.getElementById("dxMode");
-  const locSeaside = document.getElementById("locSeaside");
-
-  const radialCountEl = document.getElementById("radialCount");
-  const radialLengthFactorEl = document.getElementById("radialLengthFactor");
-  const elevatedRadials = document.getElementById("elevatedRadials");
-
-  const txPowerEl = document.getElementById("txPower");
-  const feedlineLossEl = document.getElementById("feedlineLoss");
-
-  const dxWarning = document.getElementById("dxWarning");
-  const radialWarning = document.getElementById("radialWarning");
-  const matchWarning = document.getElementById("matchWarning");
-  const goodMatchNote = document.getElementById("goodMatchNote");
-
-  // --- Frequency & wavelength ---
-  const fMHz = parseFloat(fMHzEl.value);
+  const fMHz = parseFloat(document.getElementById("freqMHz").value);
   const lambda = 300 / fMHz;
 
-  lambdaLabel.textContent = lambda.toFixed(3);
-  designFreqLabel.textContent = fMHz.toFixed(3) + " MHz";
-  designLambdaLabel.textContent = lambda.toFixed(3) + " m";
+  document.getElementById("lambdaLabel").textContent = lambda.toFixed(3);
+  document.getElementById("designFreqLabel").textContent = fMHz.toFixed(3) + " MHz";
+  document.getElementById("designLambdaLabel").textContent = lambda.toFixed(3) + " m";
 
-  // --- DX Mode ---
-  const dx = dxMode.checked;
-  const seaside = locSeaside.checked;
+  const dx = document.getElementById("dxMode").checked;
+  const seaside = document.getElementById("locSeaside").checked;
 
   let drivenLambda = dx ? 0.70 : 0.25;
-  drivenLambdaLabel.textContent = dx ? "0.70 λ (DX)" : "0.25 λ";
-
+  document.getElementById("drivenLambdaLabel").textContent = dx ? "0.70 λ (DX)" : "0.25 λ";
   const drivenLength = drivenLambda * lambda;
   const scale = dx ? 2.8 : 1.0;
 
-  // --- Parasitics ---
-  const nDir = parseInt(numDirectors.value);
-  const dSpacing = parseFloat(directorSpacing.value) * lambda;
-  const dFactor = parseFloat(directorLengthFactor.value);
-  const reflOn = addReflector.checked;
-  const reflFactor = parseFloat(reflectorFactor.value);
+  const nDir = parseInt(document.getElementById("numDirectors").value);
+  const dSpacing = parseFloat(document.getElementById("directorSpacing").value) * lambda;
+  const dFactor = parseFloat(document.getElementById("directorLengthFactor").value);
+  const reflOn = document.getElementById("addReflector").checked;
+  const reflFactor = parseFloat(document.getElementById("reflectorFactor").value);
 
-  // --- Build element list ---
   const elements = [];
-  let pos = 0;
-
   if (reflOn) {
     elements.push({
       name: "Reflector",
@@ -581,15 +499,13 @@ function updateAll() {
       pos: -dSpacing * scale
     });
   }
-
   elements.push({
     name: "Driven",
     type: "Driven",
     length: drivenLength * scale,
     pos: 0
   });
-
-  pos = 0;
+  let pos = 0;
   for (let i = 0; i < nDir; i++) {
     pos += dSpacing * scale;
     elements.push({
@@ -599,14 +515,11 @@ function updateAll() {
       pos: pos
     });
   }
-
   elements.sort((a,b) => a.pos - b.pos);
 
-  // --- Element table ---
   const tbody = document.querySelector("#elementTable tbody");
   tbody.innerHTML = "";
   let totalWire = 0;
-
   elements.forEach(el => {
     totalWire += el.length;
     const tr = document.createElement("tr");
@@ -624,33 +537,25 @@ function updateAll() {
   document.getElementById("boomLengthLabel").textContent = boomLength.toFixed(3);
   document.getElementById("totalWireLabel").textContent = totalWire.toFixed(3);
 
-  // --- Config summary ---
-  const configText = document.getElementById("configText");
-  configText.textContent =
+  const radialCount = parseInt(document.getElementById("radialCount").value);
+  const radialFactor = parseFloat(document.getElementById("radialLengthFactor").value);
+  const elevated = document.getElementById("elevatedRadials").checked;
+
+  document.getElementById("configText").textContent =
     `${reflOn ? "Reflector" : "No reflector"} · ${nDir} director(s) · Ground-mounted radial system`;
 
-  // --- DX warnings ---
-  dxWarning.style.display = dx ? "block" : "none";
-
-  // --- Radial warnings ---
-  const radialCount = parseInt(radialCountEl.value);
-  const radialFactor = parseFloat(radialLengthFactorEl.value);
-
+  document.getElementById("dxWarning").style.display = dx ? "block" : "none";
   if (dx && (radialCount < 16 || radialFactor < 0.40)) {
-    radialWarning.style.display = "block";
+    document.getElementById("radialWarning").style.display = "block";
   } else {
-    radialWarning.style.display = "none";
+    document.getElementById("radialWarning").style.display = "none";
   }
 
-  // ------------------------------------------------------------
-  // Impedance model
-  // ------------------------------------------------------------
   let Rrad = 36;
   if (dx) Rrad *= 1.8;
-
   let Rground = 20 / radialCount;
   if (radialFactor >= 0.40) Rground *= 0.6;
-  if (elevatedRadials.checked) Rground *= 0.7;
+  if (elevated) Rground *= 0.7;
 
   const Rtotal = Rrad + Rground;
   const X = dx ? 25 : 5;
@@ -666,77 +571,54 @@ function updateAll() {
   document.getElementById("swrCenterLabel").textContent = swr.toFixed(2);
 
   if (Zmag < 30 || Zmag > 80) {
-    matchWarning.style.display = "block";
-    goodMatchNote.style.display = "none";
+    document.getElementById("matchWarning").style.display = "block";
+    document.getElementById("goodMatchNote").style.display = "none";
   } else {
-    matchWarning.style.display = "none";
-    goodMatchNote.style.display = "block";
+    document.getElementById("matchWarning").style.display = "none";
+    document.getElementById("goodMatchNote").style.display = "block";
   }
 
-  // --- Bandwidth ---
   const bw2 = (fMHz * (Rrad / Rtotal) * 0.015) * 1000;
   const bw3 = bw2 * 1.5;
   document.getElementById("bw2Label").textContent = bw2.toFixed(0);
   document.getElementById("bw3Label").textContent = bw3.toFixed(0);
 
-  // ------------------------------------------------------------
-  // Gain model
-  // ------------------------------------------------------------
   let gain = 2.1 + nDir * 1.2;
   if (reflOn) gain += 1.0;
   if (dx) gain += 2.0;
   if (seaside) gain += 3.0;
-
   document.getElementById("gainLabel").textContent = gain.toFixed(1);
 
   const boost = (dx ? 2.0 : 0) + (seaside ? 3.0 : 0);
   document.getElementById("boostLabel").textContent = boost.toFixed(1);
 
-  // ------------------------------------------------------------
-  // TOA model
-  // ------------------------------------------------------------
   let toa = 28;
   if (dx) toa -= 8;
   if (seaside) toa -= 6;
   if (toa < 8) toa = 8;
-
   document.getElementById("toaLabel").textContent = toa.toFixed(1);
 
-  // ------------------------------------------------------------
-  // F/B ratio
-  // ------------------------------------------------------------
   let fb = 8 + nDir * 4;
   if (reflOn) fb += 6;
   if (dx) fb += 4;
-
   document.getElementById("fbLabel").textContent = fb.toFixed(1);
 
-  // ------------------------------------------------------------
-  // ERP
-  // ------------------------------------------------------------
-  const Ptx = parseFloat(txPowerEl.value);
-  const feedLoss = parseFloat(feedlineLossEl.value);
+  const Ptx = parseFloat(document.getElementById("txPower").value);
+  const feedLoss = parseFloat(document.getElementById("feedlineLoss").value);
   const eff = (Rrad / Rtotal) * 100;
-
   document.getElementById("effLabel").textContent = eff.toFixed(1);
 
   const Pfeed = Ptx * undb(-feedLoss);
   const Prad = Pfeed * (eff / 100);
   const ERP = Prad * undb(gain);
-
   document.getElementById("erpLabel").textContent = ERP.toFixed(1);
 
-  // ------------------------------------------------------------
-  // 2D Azimuth plot
-  // ------------------------------------------------------------
   const az = [];
   const azGain = [];
-
   for (let phi = 0; phi <= 360; phi += 5) {
     az.push(phi);
     azGain.push(gain - 0.5 * Math.abs(Math.sin(phi * Math.PI/180)));
   }
-
   Plotly.newPlot("azimuthPlot", [{
     x: az,
     y: azGain,
@@ -749,16 +631,37 @@ function updateAll() {
     yaxis: {title: "Gain (dBi)"}
   });
 
-  // ------------------------------------------------------------
-  // 2D Elevation plot
-  // ------------------------------------------------------------
+  // --- Physically-based elevation + 3D with mixed ground model ---
+  const hBase = parseFloat(document.getElementById("elementHeight").value);
+  const heff = hBase + (drivenLength / 2);
+
+  const soil = seaside
+    ? { sigma: 5.0, epsr: 80.0 }
+    : { sigma: 0.005, epsr: 13.0 };
+
+  const k0 = 2 * Math.PI / lambda;
+
+  function groundGamma(thetaRad) {
+    const sinT = Math.sin(thetaRad);
+    const base = seaside ? -0.95 : -0.6;
+    const tilt = 0.2 * (sinT - 0.5);
+    return base + tilt;
+  }
+
   const el = [];
   const elGain = [];
-
   for (let th = 0; th <= 90; th += 2) {
-    const elevFactor = Math.cos((th - toa) * Math.PI/180);
+    const thRad = th * Math.PI / 180;
+    const Ev = Math.sin(thRad);
+    const dphi = 2 * k0 * heff * Math.sin(thRad);
+    const Gamma = groundGamma(thRad);
+    const E = Math.sqrt(
+      Ev*Ev +
+      (Gamma*Gamma) * Ev*Ev +
+      2 * Ev*Ev * Gamma * Math.cos(dphi)
+    );
     el.push(th);
-    elGain.push(gain * Math.max(0, elevFactor));
+    elGain.push(gain + db(Math.max(E, 1e-6)));
   }
 
   Plotly.newPlot("elevationPlot", [{
@@ -770,31 +673,29 @@ function updateAll() {
   }], {
     margin: {t: 20},
     xaxis: {title: "Elevation (°)"},
-    yaxis: {title: "Gain (dBi)"}
+    yaxis: {title: "Relative Gain (dB)"}
   });
 
-  // ------------------------------------------------------------
-  // 3D Pattern (correct θ/φ + ground reflection)
-  // ------------------------------------------------------------
   const theta = [];
   const phiArr = [];
   const r = [];
-
   for (let th = 0; th <= 180; th += 5) {
+    const elevDeg = th <= 90 ? th : 180 - th;
+    const thRad = elevDeg * Math.PI / 180;
+    const Ev = Math.sin(thRad);
+    const dphi = 2 * k0 * heff * Math.sin(thRad);
+    const Gamma = groundGamma(thRad);
+    const E = Math.sqrt(
+      Ev*Ev +
+      (Gamma*Gamma) * Ev*Ev +
+      2 * Ev*Ev * Gamma * Math.cos(dphi)
+    );
+    const Edb = gain + db(Math.max(E, 1e-6));
     for (let ph = 0; ph <= 360; ph += 5) {
-      const thRad = th * Math.PI/180;
-      const phRad = ph * Math.PI/180;
-
-      theta.push(thRad);
+      const phRad = ph * Math.PI / 180;
+      theta.push(th * Math.PI / 180);
       phiArr.push(phRad);
-
-      const elev = Math.abs(th - toa);
-      let g = gain * Math.max(0, Math.cos(elev * Math.PI/180));
-
-      const Gamma = seaside ? -0.95 : -0.6;
-      g += Gamma * 0.4 * g;
-
-      r.push(Math.max(0.01, g));
+      r.push(Math.max(0.01, Edb));
     }
   }
 
@@ -821,17 +722,11 @@ function updateAll() {
     margin: {t: 20}
   });
 
-  // ------------------------------------------------------------
-  // Placeholder diagrams
-  // ------------------------------------------------------------
   document.getElementById("boomDiagram").textContent = "Boom spacing diagram (placeholder)";
   document.getElementById("radialDiagram").textContent = "Radial layout diagram (placeholder)";
   document.getElementById("currentDiagram").textContent = "Current distribution diagram (placeholder)";
 }
 
-// ------------------------------------------------------------
-// Initialize after DOM is ready
-// ------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("input, select").forEach(el => {
     el.addEventListener("input", updateAll);
