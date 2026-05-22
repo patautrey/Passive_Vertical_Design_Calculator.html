@@ -424,8 +424,7 @@
   <!-- TEACHING CARDS -->
   <div class="card" style="margin-top:20px;">
     <h3>How to Improve Your Vertical Antenna Performance</h3>
-    <ol style="font-size:14px; color:#333;
-      <li><b>Add a reflector</b> — Improves front‑to‑back ratio and pushes more signal forward.</li>
+    <ol style="font-size:14px; color:#333;       <li><b>Add a reflector</b> — Improves front‑to‑back ratio and pushes more signal forward.</li>
       <li><b>Add a director</b> — Narrows the beam and increases forward gain.</li>
       <li><b>Add more directors</b> — Each one adds a bit more gain and directivity (with diminishing returns).</li>
       <li><b>Add more radials</b> — Reduces ground loss and increases radiation efficiency dramatically.</li>
@@ -534,7 +533,7 @@ const totalWireLabel    = document.getElementById("totalWireLabel");
 
 const boomDiagram       = document.getElementById("boomDiagram");
 const radialDiagram     = document.getElementById("radialDiagram");
-const currentDiagram    = document.getElementById("cu
+const currentDiagram    = document.getElementById("currentDiagram");
 
 const copySummaryBtn    = document.getElementById("copySummaryBtn");
 
@@ -792,4 +791,192 @@ function updateAll() {
     el.push(th);
     elGain.push(gain + db(Math.max(E, 1e-6)));
   }
-  Plotly.newPlot("elevationPlot",
+  Plotly.newPlot("elevationPlot",  /* ============================================================
+     3D PATTERN
+     ============================================================ */
+  const theta = [];
+  const phiArr = [];
+  const r = [];
+
+  for (let th = 0; th <= 180; th += 5) {
+    const elevDeg = th <= 90 ? th : 180 - th;
+    const thRad   = elevDeg * Math.PI / 180;
+    const Ev      = Math.sin(thRad);
+    const dphi    = 2 * k0 * heff * Math.sin(thRad);
+    const Gamma   = groundGamma(thRad, seaside);
+
+    const E = Math.sqrt(
+      Ev*Ev +
+      (Gamma*Gamma) * Ev*Ev +
+      2 * Ev*Ev * Gamma * Math.cos(dphi)
+    );
+
+    const Edb = gain + db(Math.max(E, 1e-6));
+
+    for (let ph = 0; ph <= 360; ph += 5) {
+      const phRad = ph * Math.PI / 180;
+      theta.push(th * Math.PI / 180);
+      phiArr.push(phRad);
+      r.push(Math.max(0.01, Edb));
+    }
+  }
+
+  const x = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.cos(phiArr[i]));
+  const y = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.sin(phiArr[i]));
+  const z = r.map((rv, i) => rv * Math.cos(theta[i]));
+
+  Plotly.newPlot("pattern3D", [{
+    x, y, z,
+    mode: "markers",
+    marker: {
+      size: 3,
+      color: r,
+      colorscale: "Jet",
+      showscale: true
+    },
+    type: "scatter3d"
+  }], {
+    scene: {
+      xaxis: {title: "X"},
+      yaxis: {title: "Y"},
+      zaxis: {title: "Z"}
+    },
+    margin: {t: 20}
+  });
+
+  /* ============================================================
+     RADIAL LAYOUT DIAGRAM
+     ============================================================ */
+  const radialCanvas = radialDiagram;
+  radialCanvas.innerHTML = "";
+
+  const radialSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  radialSVG.setAttribute("width", "100%");
+  radialSVG.setAttribute("height", "100%");
+  radialSVG.setAttribute("viewBox", "0 0 200 200");
+
+  const cx = 100, cy = 100;
+  const radials = radialCountVal;
+  const radius = 80;
+
+  for (let i = 0; i < radials; i++) {
+    const angle = (i / radials) * 2 * Math.PI;
+    const x2 = cx + radius * Math.cos(angle);
+    const y2 = cy + radius * Math.sin(angle);
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", cx);
+    line.setAttribute("y1", cy);
+    line.setAttribute("x2", x2);
+    line.setAttribute("y2", y2);
+    line.setAttribute("stroke", "#0b63ce");
+    line.setAttribute("stroke-width", "2");
+    radialSVG.appendChild(line);
+  }
+
+  radialCanvas.appendChild(radialSVG);
+
+  /* ============================================================
+     CURRENT DISTRIBUTION DIAGRAM
+     ============================================================ */
+  const currentCanvas = currentDiagram;
+  currentCanvas.innerHTML = "";
+
+  const currentSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  currentSVG.setAttribute("width", "100%");
+  currentSVG.setAttribute("height", "100%");
+  currentSVG.setAttribute("viewBox", "0 0 200 200");
+
+  const baseX = 20;
+  const baseY = 180;
+  const barWidth = 30;
+
+  elements.forEach((el, idx) => {
+    const I = el.type === "Driven" ? 1.0 :
+              el.type === "Reflector" ? 0.8 :
+              0.6;
+
+    const barHeight = I * 120;
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", baseX + idx * (barWidth + 10));
+    rect.setAttribute("y", baseY - barHeight);
+    rect.setAttribute("width", barWidth);
+    rect.setAttribute("height", barHeight);
+    rect.setAttribute("fill", "#d7263d");
+
+    currentSVG.appendChild(rect);
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", baseX + idx * (barWidth + 10) + barWidth / 2);
+    label.setAttribute("y", baseY + 15);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("font-size", "10");
+    label.textContent = el.name;
+    currentSVG.appendChild(label);
+  });
+
+  currentCanvas.appendChild(currentSVG);
+
+} /* END updateAll() */
+
+
+/* ============================================================
+   SUMMARY COPY FUNCTION
+   ============================================================ */
+function generateTextSummary() {
+  return `
+KG5IEF Passive Vertical & Vertical‑Yagi Designer
+------------------------------------------------
+Design Frequency: ${designFreqLabel.textContent}
+Wavelength: ${designLambdaLabel.textContent}
+
+Configuration:
+  ${configText.textContent}
+
+Element Geometry:
+  Total boom length: ${boomLengthLabel.textContent} m
+  Total wire length: ${totalWireLabel.textContent} m
+
+Performance Metrics:
+  Forward gain: ${gainLabel.textContent} dBi
+  TOA: ${toaLabel.textContent}°
+  Front-to-back ratio: ${fbLabel.textContent} dB
+  ERP: ${erpLabel.textContent} W
+
+Impedance & Matching:
+  Feedpoint impedance: ${zLabel.textContent}
+  SWR @ f₀: ${swrCenterLabel.textContent}
+  2:1 bandwidth: ${bw2Label.textContent} kHz
+  3:1 bandwidth: ${bw3Label.textContent} kHz
+
+Efficiency:
+  Radiation resistance: ${rradLabel.textContent} Ω
+  Ground loss resistance: ${rgroundLabel.textContent} Ω
+  Total resistance: ${rtotalLabel.textContent} Ω
+  Efficiency: ${effLabel.textContent} %
+
+Notes:
+  This summary was generated by KG5IEF’s antenna design tool.
+  Patterns include realistic ground-reflection modeling.
+`;
+}
+
+copySummaryBtn.addEventListener("click", () => {
+  navigator.clipboard.writeText(generateTextSummary());
+  alert("Design summary copied to clipboard.");
+});
+
+/* ============================================================
+   EVENT LISTENERS
+   ============================================================ */
+document.querySelectorAll("input, select").forEach(el => {
+  el.addEventListener("input", updateAll);
+  el.addEventListener("change", updateAll);
+});
+
+updateAll();
+</script>
+
+</body>
+</html>
