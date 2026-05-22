@@ -423,40 +423,40 @@
         <div id="elevationPlot"></div>
       </div>
     </div>
-    <h3>3D Radiation Pattern (Realistic Ground-Reflected Gain)</h3>
+        <h3>3D Radiation Pattern (Realistic Ground-Reflected Gain)</h3>
     <div id="pattern3D"></div>
   </div>
 
+  <!-- Teaching Tool: How to Improve Your Vertical Antenna Performance -->
   <div class="card" style="margin-top:20px;">
-    <h3>Design Notes & Interpretation</h3>
-    <p class="section-label">DX Turbo Mode</p>
-    <p style="font-size:14px; color:var(--text-soft);">
-      DX Turbo Mode extends the driven element toward ~0.70 λ and scales parasitic elements to favor low-angle
-      radiation, higher forward gain, and stronger front-to-back ratio. This comes at the cost of higher feedpoint
-      impedance and narrower bandwidth, especially on low HF bands.
+    <h3>How to Improve Your Vertical Antenna Performance</h3>
+
+    <p style="font-size:14px; color:#555;">
+      Vertical antennas are simple, powerful, and incredibly sensitive to their environment.
+      Here are the most effective ways to boost performance, in order of real‑world impact:
     </p>
 
-    <p class="section-label">Ground-Reflected Gain vs Seaside Mode</p>
-    <p style="font-size:14px; color:var(--text-soft);">
-      Normal mode uses realistic inland soil. Seaside mode assumes seawater, greatly enhancing low-angle gain and DX
-      performance, especially on 80 m and 40 m.
-    </p>
+    <ol style="font-size:14px; color:#333; line-height:1.45;">
+      <li><b>Add a reflector</b> — Improves front‑to‑back ratio and pushes more signal forward.</li>
+      <li><b>Add a director</b> — Narrows the beam and increases forward gain.</li>
+      <li><b>Add more directors</b> — Each one adds a bit more gain and directivity (with diminishing returns).</li>
+      <li><b>Add more radials</b> — Reduces ground loss and increases radiation efficiency dramatically.</li>
+      <li><b>Elevate the radials</b> — Turns lossy ground radials into efficient tuned counterpoises.</li>
+      <li><b>Lengthen the elements to ~0.70 λ</b> — Creates a strong low‑angle DX lobe (requires matching).</li>
+      <li><b>Choose the best time of day or night</b> — Propagation can outperform hardware improvements.</li>
+    </ol>
 
-    <p class="section-label">Interpreting TOA, F/B, and ERP</p>
-    <p style="font-size:14px; color:var(--text-soft);">
-      The takeoff angle (TOA) indicates the elevation of the strongest lobe. Lower TOA favors long-distance DX,
-      while higher TOA favors regional coverage. Front-to-back ratio (F/B) describes how well the array rejects
-      signals from the rear. ERP combines transmitter power, feedline loss, efficiency, and forward gain into an
-      effective radiated power toward the main lobe.
-    </p>
-
-    <p class="footer-note">
-      All models are approximate and assume idealized elements and ground. Always verify final designs with
-      measurement or full-wave modeling (e.g., NEC, 4NEC2) before construction.
+    <p style="font-size:13px; color:#777; margin-top:10px;">
+      Note: Seaside operation is intentionally excluded here, but remains the single most powerful
+      environmental boost when available.
     </p>
   </div>
 
-</div>
+</div> <!-- end .page -->
+
+<!-- ========================= -->
+<!-- FULL JAVASCRIPT ENGINE   -->
+<!-- ========================= -->
 
 <script>
 function metersToFeetInches(m) {
@@ -469,27 +469,34 @@ function db(x) { return 10 * Math.log10(x); }
 function undb(x) { return Math.pow(10, x / 10); }
 
 function updateAll() {
-  const fMHz = parseFloat(document.getElementById("freqMHz").value);
+
+  /* ---------------------------
+     FREQUENCY + BASIC GEOMETRY
+     --------------------------- */
+  const fMHz = parseFloat(freqMHz.value);
   const lambda = 300 / fMHz;
 
-  document.getElementById("lambdaLabel").textContent = lambda.toFixed(3);
-  document.getElementById("designFreqLabel").textContent = fMHz.toFixed(3) + " MHz";
-  document.getElementById("designLambdaLabel").textContent = lambda.toFixed(3) + " m";
+  lambdaLabel.textContent = lambda.toFixed(3);
+  designFreqLabel.textContent = fMHz.toFixed(3) + " MHz";
+  designLambdaLabel.textContent = lambda.toFixed(3) + " m";
 
-  const dx = document.getElementById("dxMode").checked;
-  const seaside = document.getElementById("locSeaside").checked;
+  const dx = dxMode.checked;
+  const seaside = locSeaside.checked;
 
   let drivenLambda = dx ? 0.70 : 0.25;
-  document.getElementById("drivenLambdaLabel").textContent = dx ? "0.70 λ (DX)" : "0.25 λ";
+  drivenLambdaLabel.textContent = dx ? "0.70 λ (DX)" : "0.25 λ";
   const drivenLength = drivenLambda * lambda;
   const scale = dx ? 2.8 : 1.0;
 
-  const nDir = parseInt(document.getElementById("numDirectors").value);
-  const dSpacing = parseFloat(document.getElementById("directorSpacing").value) * lambda;
-  const dFactor = parseFloat(document.getElementById("directorLengthFactor").value);
-  const reflOn = document.getElementById("addReflector").checked;
-  const reflFactor = parseFloat(document.getElementById("reflectorFactor").value);
+  const nDir = parseInt(numDirectors.value);
+  const dSpacing = parseFloat(directorSpacing.value) * lambda;
+  const dFactor = parseFloat(directorLengthFactor.value);
+  const reflOn = addReflector.checked;
+  const reflFactor = parseFloat(reflectorFactor.value);
 
+  /* ---------------------------
+     BUILD ELEMENT LIST
+     --------------------------- */
   const elements = [];
   if (reflOn) {
     elements.push({
@@ -517,9 +524,13 @@ function updateAll() {
   }
   elements.sort((a,b) => a.pos - b.pos);
 
+  /* ---------------------------
+     ELEMENT TABLE
+     --------------------------- */
   const tbody = document.querySelector("#elementTable tbody");
   tbody.innerHTML = "";
   let totalWire = 0;
+
   elements.forEach(el => {
     totalWire += el.length;
     const tr = document.createElement("tr");
@@ -534,25 +545,33 @@ function updateAll() {
   });
 
   const boomLength = elements[elements.length - 1].pos - elements[0].pos;
-  document.getElementById("boomLengthLabel").textContent = boomLength.toFixed(3);
-  document.getElementById("totalWireLabel").textContent = totalWire.toFixed(3);
+  boomLengthLabel.textContent = boomLength.toFixed(3);
+  totalWireLabel.textContent = totalWire.toFixed(3);
 
-  const radialCount = parseInt(document.getElementById("radialCount").value);
-  const radialFactor = parseFloat(document.getElementById("radialLengthFactor").value);
-  const elevated = document.getElementById("elevatedRadials").checked;
-
-  document.getElementById("configText").textContent =
+  /* ---------------------------
+     CONFIG SUMMARY
+     --------------------------- */
+  configText.textContent =
     `${reflOn ? "Reflector" : "No reflector"} · ${nDir} director(s) · Ground-mounted radial system`;
 
-  document.getElementById("dxWarning").style.display = dx ? "block" : "none";
+  dxWarning.style.display = dx ? "block" : "none";
+
+  const radialCount = parseInt(radialCount.value);
+  const radialFactor = parseFloat(radialLengthFactor.value);
+  const elevated = elevatedRadials.checked;
+
   if (dx && (radialCount < 16 || radialFactor < 0.40)) {
-    document.getElementById("radialWarning").style.display = "block";
+    radialWarning.style.display = "block";
   } else {
-    document.getElementById("radialWarning").style.display = "none";
+    radialWarning.style.display = "none";
   }
 
+  /* ---------------------------
+     IMPEDANCE MODEL
+     --------------------------- */
   let Rrad = 36;
   if (dx) Rrad *= 1.8;
+
   let Rground = 20 / radialCount;
   if (radialFactor >= 0.40) Rground *= 0.6;
   if (elevated) Rground *= 0.7;
@@ -560,65 +579,75 @@ function updateAll() {
   const Rtotal = Rrad + Rground;
   const X = dx ? 25 : 5;
 
-  document.getElementById("rradLabel").textContent = Rrad.toFixed(1);
-  document.getElementById("rgroundLabel").textContent = Rground.toFixed(1);
-  document.getElementById("rtotalLabel").textContent = Rtotal.toFixed(1);
-  document.getElementById("zLabel").textContent = `${Rtotal.toFixed(1)} + j${X.toFixed(1)}`;
+  rradLabel.textContent = Rrad.toFixed(1);
+  rgroundLabel.textContent = Rground.toFixed(1);
+  rtotalLabel.textContent = Rtotal.toFixed(1);
+  zLabel.textContent = `${Rtotal.toFixed(1)} + j${X.toFixed(1)}`;
 
   const Zmag = Math.sqrt(Rtotal*Rtotal + X*X);
   let swr = Zmag / 50;
   if (swr < 1) swr = 1 / swr;
-  document.getElementById("swrCenterLabel").textContent = swr.toFixed(2);
+  swrCenterLabel.textContent = swr.toFixed(2);
 
   if (Zmag < 30 || Zmag > 80) {
-    document.getElementById("matchWarning").style.display = "block";
-    document.getElementById("goodMatchNote").style.display = "none";
+    matchWarning.style.display = "block";
+    goodMatchNote.style.display = "none";
   } else {
-    document.getElementById("matchWarning").style.display = "none";
-    document.getElementById("goodMatchNote").style.display = "block";
+    matchWarning.style.display = "none";
+    goodMatchNote.style.display = "block";
   }
 
   const bw2 = (fMHz * (Rrad / Rtotal) * 0.015) * 1000;
   const bw3 = bw2 * 1.5;
-  document.getElementById("bw2Label").textContent = bw2.toFixed(0);
-  document.getElementById("bw3Label").textContent = bw3.toFixed(0);
+  bw2Label.textContent = bw2.toFixed(0);
+  bw3Label.textContent = bw3.toFixed(0);
 
+  /* ---------------------------
+     GAIN, TOA, F/B
+     --------------------------- */
   let gain = 2.1 + nDir * 1.2;
   if (reflOn) gain += 1.0;
   if (dx) gain += 2.0;
   if (seaside) gain += 3.0;
-  document.getElementById("gainLabel").textContent = gain.toFixed(1);
+  gainLabel.textContent = gain.toFixed(1);
 
   const boost = (dx ? 2.0 : 0) + (seaside ? 3.0 : 0);
-  document.getElementById("boostLabel").textContent = boost.toFixed(1);
+  boostLabel.textContent = boost.toFixed(1);
 
   let toa = 28;
   if (dx) toa -= 8;
   if (seaside) toa -= 6;
   if (toa < 8) toa = 8;
-  document.getElementById("toaLabel").textContent = toa.toFixed(1);
+  toaLabel.textContent = toa.toFixed(1);
 
   let fb = 8 + nDir * 4;
   if (reflOn) fb += 6;
   if (dx) fb += 4;
-  document.getElementById("fbLabel").textContent = fb.toFixed(1);
+  fbLabel.textContent = fb.toFixed(1);
 
-  const Ptx = parseFloat(document.getElementById("txPower").value);
-  const feedLoss = parseFloat(document.getElementById("feedlineLoss").value);
+  /* ---------------------------
+     ERP
+     --------------------------- */
+  const Ptx = parseFloat(txPower.value);
+  const feedLoss = parseFloat(feedlineLoss.value);
   const eff = (Rrad / Rtotal) * 100;
-  document.getElementById("effLabel").textContent = eff.toFixed(1);
+  effLabel.textContent = eff.toFixed(1);
 
   const Pfeed = Ptx * undb(-feedLoss);
   const Prad = Pfeed * (eff / 100);
   const ERP = Prad * undb(gain);
-  document.getElementById("erpLabel").textContent = ERP.toFixed(1);
+  erpLabel.textContent = ERP.toFixed(1);
 
+  /* ---------------------------
+     AZIMUTH PLOT
+     --------------------------- */
   const az = [];
   const azGain = [];
   for (let phi = 0; phi <= 360; phi += 5) {
     az.push(phi);
     azGain.push(gain - 0.5 * Math.abs(Math.sin(phi * Math.PI/180)));
   }
+
   Plotly.newPlot("azimuthPlot", [{
     x: az,
     y: azGain,
@@ -631,8 +660,10 @@ function updateAll() {
     yaxis: {title: "Gain (dBi)"}
   });
 
-  // --- Physically-based elevation + 3D with mixed ground model ---
-  const hBase = parseFloat(document.getElementById("elementHeight").value);
+  /* ---------------------------
+     PHYSICALLY-BASED ELEVATION
+     --------------------------- */
+  const hBase = parseFloat(elementHeight.value);
   const heff = hBase + (drivenLength / 2);
 
   const soil = seaside
@@ -676,9 +707,13 @@ function updateAll() {
     yaxis: {title: "Relative Gain (dB)"}
   });
 
+  /* ---------------------------
+     3D PATTERN
+     --------------------------- */
   const theta = [];
   const phiArr = [];
   const r = [];
+
   for (let th = 0; th <= 180; th += 5) {
     const elevDeg = th <= 90 ? th : 180 - th;
     const thRad = elevDeg * Math.PI / 180;
@@ -691,6 +726,7 @@ function updateAll() {
       2 * Ev*Ev * Gamma * Math.cos(dphi)
     );
     const Edb = gain + db(Math.max(E, 1e-6));
+
     for (let ph = 0; ph <= 360; ph += 5) {
       const phRad = ph * Math.PI / 180;
       theta.push(th * Math.PI / 180);
@@ -722,9 +758,12 @@ function updateAll() {
     margin: {t: 20}
   });
 
-  document.getElementById("boomDiagram").textContent = "Boom spacing diagram (placeholder)";
-  document.getElementById("radialDiagram").textContent = "Radial layout diagram (placeholder)";
-  document.getElementById("currentDiagram").textContent = "Current distribution diagram (placeholder)";
+  /* ---------------------------
+     PLACEHOLDER DIAGRAMS
+     --------------------------- */
+  boomDiagram.textContent = "Boom spacing diagram (placeholder)";
+  radialDiagram.textContent = "Radial layout diagram (placeholder)";
+  currentDiagram.textContent = "Current distribution diagram (placeholder)";
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -735,5 +774,6 @@ window.addEventListener("DOMContentLoaded", () => {
   updateAll();
 });
 </script>
+
 </body>
 </html>
