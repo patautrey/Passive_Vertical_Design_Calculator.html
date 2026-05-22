@@ -468,9 +468,6 @@
     <button id="copySummaryBtn" style="padding:8px 14px; font-size:14px; cursor:pointer;">
       Copy Full Antenna Summary
     </button>
-    <p style="font-size:13px; color:#777; margin-top:10px;">
-      This copies a complete text summary including your callsign <b>KG5IEF</b>.
-    </p>
   </div>
 
 </div> <!-- end .page -->
@@ -694,12 +691,62 @@ function updateAll() {
   const ERP   = Prad * undb(gain);
   erpLabel.textContent = ERP.toFixed(1);
 
+  const k0    = 2 * Math.PI / lambda;
+  const hBase = parseFloat(elementHeight.value) || 0;
+  const heff  = hBase + (drivenLength / 2);
+
+  // Hybrid NEC-style azimuth pattern with ground
+  function elementCurrent(elType) {
+    if (elType === "Reflector") {
+      return { mag: 0.8, phase: -40 * Math.PI/180 };
+    } else if (elType === "Director") {
+      return { mag: 0.6, phase: +25 * Math.PI/180 };
+    } else {
+      return { mag: 1.0, phase: 0 };
+    }
+  }
+
+  const toaRad = toa * Math.PI / 180;
+  const Ev_g   = Math.sin(toaRad);
+  const dphi_g = 2 * k0 * heff * Math.sin(toaRad);
+  const Gamma_g= groundGamma(toaRad, seaside);
+  const groundFactor = Math.sqrt(
+    Ev_g*Ev_g +
+    (Gamma_g*Gamma_g) * Ev_g*Ev_g +
+    2 * Ev_g*Ev_g * Gamma_g * Math.cos(dphi_g)
+  );
+
   const az = [];
   const azGain = [];
+  const azField = [];
+
   for (let phi = 0; phi <= 360; phi += 5) {
+    const phiRad = phi * Math.PI / 180;
+    let sumRe = 0;
+    let sumIm = 0;
+
+    elements.forEach(el => {
+      const I = elementCurrent(el.type);
+      const phaseSpace = k0 * el.pos * Math.cos(phiRad);
+      const totalPhase = I.phase + phaseSpace;
+      sumRe += I.mag * Math.cos(totalPhase);
+      sumIm += I.mag * Math.sin(totalPhase);
+    });
+
+    let field = Math.sqrt(sumRe*sumRe + sumIm*sumIm);
+    field *= groundFactor;
+
     az.push(phi);
-    azGain.push(gain - 0.5 * Math.abs(Math.sin(phi * Math.PI/180)));
+    azField.push(field);
   }
+
+  const maxField = Math.max(...azField);
+  for (let i = 0; i < az.length; i++) {
+    const rel = azField[i] / (maxField || 1e-6);
+    const patDb = 20 * Math.log10(Math.max(rel, 1e-6));
+    azGain[i] = gain + patDb;
+  }
+
   Plotly.newPlot("azimuthPlot", [{
     x: az,
     y: azGain,
@@ -712,10 +759,7 @@ function updateAll() {
     yaxis: {title: "Gain (dBi)"}
   });
 
-  const hBase = parseFloat(elementHeight.value) || 0;
-  const heff  = hBase + (drivenLength / 2);
-  const k0    = 2 * Math.PI / lambda;
-
+  // Elevation pattern
   const el = [];
   const elGain = [];
   for (let th = 0; th <= 90; th += 2) {
@@ -743,6 +787,7 @@ function updateAll() {
     yaxis: {title: "Relative Gain (dB)"}
   });
 
+  // 3D pattern
   const theta = [];
   const phiArr = [];
   const r = [];
@@ -835,7 +880,7 @@ if (copySummaryBtn) {
   copySummaryBtn.addEventListener("click", () => {
     const text = generateTextSummary();
     navigator.clipboard.writeText(text);
-    alert("Design summary copied to clipboard with callsign KG5IEF.");
+    alert("Design summary copied to clipboard.");
   });
 }
 
