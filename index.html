@@ -351,8 +351,7 @@ function computeElevationPattern(lambda, hasRef, nDir, elevated, fMHz) {
   var phi = 0;
   var angles = [], dBs = [], vals = [], maxVal = 0;
 
-  var h = 0.05 * lambda;   // <-- FIXED HEIGHT ALWAYS
-
+  var h = 0.05 * lambda;   // fixed height for TOA model
   var Gamma = -1;
 
   for (var elev = 0; elev <= 90; elev++) {
@@ -516,6 +515,9 @@ function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi, elevated, fMHz) 
   };
 }
 
+/* ============================================================
+   Build element table
+   ============================================================ */
 function buildElementTable(lambda, hasRef, nDir) {
   var html = "<table><tr><th>Element</th><th>Type</th><th>Length (m)</th><th>Length (ft/in)</th><th>Position (m)</th></tr>";
 
@@ -552,6 +554,9 @@ function buildElementTable(lambda, hasRef, nDir) {
   return html;
 }
 
+/* ============================================================
+   Plotting functions
+   ============================================================ */
 function plotAzimuth(az, fMHz) {
   var trace = {
     type: "scatterpolar",
@@ -616,6 +621,9 @@ function plot3D(p3) {
   Plotly.newPlot("pattern3D", data, layout, { responsive: true });
 }
 
+/* ============================================================
+   Main calculation
+   ============================================================ */
 function calculate() {
   var fMHz = parseFloat(document.getElementById("freq").value);
   var lambda = 300 / fMHz;
@@ -678,6 +686,9 @@ function calculate() {
     "Lengths are approximate free-space values; adjust for element diameter and tuning.";
 }
 
+/* ============================================================
+   Event listeners
+   ============================================================ */
 document.getElementById("freq").addEventListener("input", calculate);
 document.getElementById("useReflector").addEventListener("change", calculate);
 document.getElementById("directors").addEventListener("change", calculate);
@@ -689,6 +700,9 @@ document.getElementById("toggleGainDetails").addEventListener("click", function(
   d.style.display = (d.style.display === "none") ? "block" : "none";
 });
 
+/* ============================================================
+   Initialize
+   ============================================================ */
 calculate();
 </script>
 
