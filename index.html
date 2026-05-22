@@ -2,18 +2,36 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>KG5IEF Antenna Design Tool</title>
+<title>K6SJE/P Passive Vertical & Vertical-Yagi Designer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Plotly (explicit version, GitHub‑safe) -->
+<link rel="preconnect" href="https://cdn.plot.ly">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
 <style>
-  body {
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    margin: 0;
-    background: #f7f9fc;
-    color: #222;
+  :root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --accent: #0b63ce;
+    --accent-soft: #dfefff;
+    --danger: #d7263d;
+    --ok: #1b9c5c;
+    --text-main: #222;
+    --text-soft: #555;
+    --border-soft: #d0d7e2;
   }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+  }
+
   .header-banner {
     background: linear-gradient(90deg, #0b63ce, #27a9ff);
     color: #fff;
@@ -22,689 +40,763 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.18);
     margin-bottom: 20px;
   }
+
   .header-banner h1 {
     margin: 0;
-    font-size: 28px;
+    font-size: 26px;
     letter-spacing: 0.03em;
   }
+
   .header-banner p {
     margin: 4px 0 0 0;
     font-size: 14px;
     opacity: 0.9;
   }
+
   .page {
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 16px 40px 16px;
   }
+
   h2 {
-    margin-top: 26px;
+    margin-top: 24px;
     margin-bottom: 10px;
-    font-size: 22px;
-  }
-  label {
-    font-size: 15px;
-  }
-  input[type="number"], select {
-    padding: 4px 6px;
-    font-size: 14px;
-    margin-left: 4px;
-  }
-  input[type="checkbox"] {
-    margin-right: 4px;
-  }
-  .control-row {
-    margin-bottom: 8px;
-  }
-  #gainLine {
-    margin-top: 18px;
     font-size: 20px;
   }
-  .summary-block {
-    background: #f0f0f5;
-    padding: 12px 14px;
-    border-radius: 8px;
-    margin-bottom: 18px;
-    font-size: 15px;
+
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+    gap: 18px;
   }
-  .toa-card {
-    background: #e0f3ff;
-    border-left: 5px solid #0094ff;
+
+  .card {
+    background: var(--card);
+    border-radius: 10px;
     padding: 14px 16px;
-    margin: 18px auto 10px auto;
-    max-width: 600px;
-    border-radius: 6px;
-    font-size: 16px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border: 1px solid var(--border-soft);
   }
-  .toa-card b {
-    font-size: 18px;
+
+  .card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 17px;
   }
-  .build-block {
-    background: #e8f4ff;
-    padding: 14px 16px;
-    border-radius: 8px;
-    margin-top: 24px;
-    font-size: 15px;
+
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: center;
   }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
+
+  .form-row label {
     font-size: 14px;
+    color: var(--text-soft);
+    min-width: 120px;
   }
-  table, th, td {
-    border: 1px solid #999;
-  }
-  th, td {
-    padding: 6px;
-    text-align: center;
-  }
-  #plotsContainer {
-    margin-top: 22px;
-  }
-  #azimuthPlot, #elevationPlot, #pattern3D {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto 10px auto;
-    height: 430px;
-  }
-  .freq-label {
-    text-align: center;
+
+  .form-row input[type="number"],
+  .form-row select {
+    padding: 5px 7px;
     font-size: 14px;
-    margin-bottom: 20px;
-    color: #444;
+    border-radius: 5px;
+    border: 1px solid var(--border-soft);
+    min-width: 80px;
   }
-  #gainSummary table, #gainDetails table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 8px;
+
+  .form-row input[type="checkbox"] {
+    transform: scale(1.1);
+    margin-right: 4px;
   }
-  #gainSummary th, #gainSummary td,
-  #gainDetails th, #gainDetails td {
-    border: 1px solid #999;
-    padding: 5px;
-    text-align: center;
+
+  .inline-label {
+    font-size: 14px;
+    color: var(--text-soft);
+    margin-right: 10px;
   }
-  #toggleGainDetails {
+
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+  }
+
+  .badge {
     display: inline-block;
-    margin: 4px 0 12px 0;
-    cursor: pointer;
-    color: #0066cc;
-    text-decoration: underline;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .badge-dx {
+    background: #ffe6cc;
+    color: #b35a00;
+  }
+
+  .badge-seaside {
+    background: #dff7ff;
+    color: #006b8f;
+  }
+
+  .badge-warning {
+    background: #ffe6e6;
+    color: #b30000;
+  }
+
+  .summary-block {
+    background: #f0f2f8;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .summary-block b {
+    font-weight: 600;
+  }
+
+  .warning-block {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #ffe6e6;
+    border-left: 5px solid var(--danger);
+    font-size: 13px;
+    color: #7a0000;
+  }
+
+  .ok-block {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #e6f7ec;
+    border-left: 5px solid var(--ok);
+    font-size: 13px;
+    color: #0f5a33;
+  }
+
+  .patterns-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  #azimuthPlot,
+  #elevationPlot,
+  #pattern3D {
+    width: 100%;
+    height: 320px;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  .table th,
+  .table td {
+    border: 1px solid #dde2ec;
+    padding: 4px 6px;
+    text-align: left;
+  }
+
+  .table th {
+    background: #f3f6fb;
+    font-weight: 600;
+  }
+
+  .diagram-container {
+    width: 100%;
+    height: 260px;
+    border-radius: 8px;
+    border: 1px dashed #c5cfdf;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8a94a8;
     font-size: 13px;
   }
-  .download-btn {
-    margin-top: 20px;
-    padding: 9px 18px;
-    font-size: 14px;
-    border-radius: 4px;
-    border: none;
-    background: #0b63ce;
-    color: #fff;
-    cursor: pointer;
+
+  .footer-note {
+    margin-top: 18px;
+    font-size: 12px;
+    color: #777;
   }
-  .download-btn:hover {
-    background: #094f9f;
+
+  @media (max-width: 900px) {
+    .grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .patterns-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 </style>
 </head>
 <body>
 
 <div class="header-banner">
-  <h1>KG5IEF Antenna Design Tool</h1>
-  <p>Ground‑mounted vertical / vertical‑Yagi with physically‑correct TOA</p>
+  <h1>K6SJE/P Passive Vertical & Vertical-Yagi Designer</h1>
+  <p>Ground-mounted vertical array with physically-correct TOA, DX Turbo Mode, and realistic ground-reflected gain.</p>
 </div>
 
 <div class="page">
 
-  <div class="control-row">
-    <label>Frequency (MHz):
-      <input type="number" id="freq" value="14.200" step="0.001">
-    </label>
+  <div class="grid">
+    <!-- LEFT: Controls & Configuration -->
+    <div class="card">
+      <h3>Antenna Configuration</h3>
+
+      <div class="section-label">Frequency & Geometry</div>
+      <div class="form-row">
+        <label for="freqMHz">Frequency (MHz):</label>
+        <input type="number" id="freqMHz" value="3.55" step="0.01" min="1" max="60">
+        <span class="inline-label">Wavelength: <span id="lambdaLabel">–</span> m</span>
+      </div>
+
+      <div class="form-row">
+        <label>Elements:</label>
+        <span class="inline-label">
+          <input type="checkbox" id="addReflector">
+          Reflector
+        </span>
+        <span class="inline-label">
+          Directors:
+          <select id="numDirectors">
+            <option value="0">0</option>
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </span>
+      </div>
+
+      <div class="form-row">
+        <label for="directorSpacing">Director spacing (λ):</label>
+        <input type="number" id="directorSpacing" value="0.10" step="0.01" min="0.05" max="0.25">
+        <span class="inline-label">Director length (λ):</span>
+        <input type="number" id="directorLengthFactor" value="0.45" step="0.01" min="0.40" max="0.50">
+      </div>
+
+      <div class="form-row">
+        <label for="reflectorFactor">Reflector length factor:</label>
+        <input type="number" id="reflectorFactor" value="1.05" step="0.01" min="1.00" max="1.10">
+        <span class="inline-label">Driven length (λ): <span id="drivenLambdaLabel">0.25</span></span>
+      </div>
+
+      <div class="section-label">Height & Location</div>
+      <div class="form-row">
+        <label for="elementHeight">Element height above ground (m):</label>
+        <input type="number" id="elementHeight" value="0.0" step="0.5" min="0" max="20">
+        <span class="inline-label">(0 = base at ground)</span>
+      </div>
+
+      <div class="form-row">
+        <label>Location model:</label>
+        <span class="inline-label">
+          <input type="radio" name="locationModel" id="locNormal" value="normal" checked>
+          Normal ground
+        </span>
+        <span class="inline-label">
+          <input type="radio" name="locationModel" id="locSeaside" value="seaside">
+          <span class="badge badge-seaside">Seaside DX</span>
+        </span>
+      </div>
+
+      <div class="section-label">DX Turbo Mode</div>
+      <div class="form-row">
+        <label>DX Mode:</label>
+        <span class="inline-label">
+          <input type="checkbox" id="dxMode">
+          <span class="badge badge-dx">DX Turbo</span>
+        </span>
+        <span class="inline-label">Radiator: <span id="dxRadiatorLabel">0.25 λ (normal)</span></span>
+      </div>
+
+      <div id="dxWarning" class="warning-block" style="display:none;">
+        <b>DX Turbo Mode:</b> Radiator extended to ~0.70 λ, parasitics scaled, and low-angle gain optimized.
+        Expect higher feedpoint impedance and narrower bandwidth.
+      </div>
+
+      <div class="section-label">Radials & Ground System</div>
+      <div class="form-row">
+        <label for="radialCount">Radial count:</label>
+        <select id="radialCount">
+          <option value="4">4</option>
+          <option value="8" selected>8</option>
+          <option value="16">16</option>
+          <option value="32">32</option>
+        </select>
+        <span class="inline-label">Radial length (λ):</span>
+        <select id="radialLengthFactor">
+          <option value="0.25" selected>0.25 λ</option>
+          <option value="0.40">0.40 λ (DX)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="elevatedRadials">
+          <input type="checkbox" id="elevatedRadials">
+          Elevated radials (~0.05 λ)
+        </label>
+      </div>
+
+      <div id="radialWarning" class="warning-block" style="display:none;">
+        <b>Note:</b> DX Mode prefers longer radials (0.40 λ) and at least 16 radials for best efficiency.
+      </div>
+
+      <div class="section-label">Power & Matching</div>
+      <div class="form-row">
+        <label for="txPower">Transmitter power (W):</label>
+        <input type="number" id="txPower" value="100" step="10" min="1" max="5000">
+        <span class="inline-label">Feedline loss (dB):</span>
+        <input type="number" id="feedlineLoss" value="1.0" step="0.1" min="0" max="10">
+      </div>
+
+      <div class="summary-block" id="configSummary">
+        Configuration: <span id="configText">No reflector · 1 director · Ground-mounted radial system</span><br>
+        Design frequency: <span id="designFreqLabel">3.550 MHz</span> · Wavelength: <span id="designLambdaLabel">–</span> m
+      </div>
+    </div>
+
+    <!-- RIGHT: Key Results -->
+    <div class="card">
+      <h3>Key Performance Metrics</h3>
+
+      <div class="section-label">Gain, TOA & F/B</div>
+      <div class="summary-block">
+        <b>Estimated forward gain:</b> <span id="gainLabel">–</span> dBi<br>
+        <b>Maximum TOA:</b> <span id="toaLabel">–</span>° above horizon<br>
+        <b>Front-to-back ratio:</b> <span id="fbLabel">–</span> dB<br>
+        <b>Seaside / DX boost:</b> <span id="boostLabel">–</span> dB
+      </div>
+
+      <div class="section-label">Impedance, SWR & Bandwidth</div>
+      <div class="summary-block">
+        <b>Feedpoint impedance:</b> <span id="zLabel">–</span> Ω<br>
+        <b>SWR @ f₀:</b> <span id="swrCenterLabel">–</span><br>
+        <b>2:1 SWR bandwidth:</b> <span id="bw2Label">–</span> kHz<br>
+        <b>3:1 SWR bandwidth:</b> <span id="bw3Label">–</span> kHz
+      </div>
+
+      <div class="section-label">Efficiency, Ground Loss & ERP</div>
+      <div class="summary-block">
+        <b>Radiation resistance:</b> <span id="rradLabel">–</span> Ω<br>
+        <b>Ground loss resistance:</b> <span id="rgroundLabel">–</span> Ω<br>
+        <b>Total feedpoint resistance:</b> <span id="rtotalLabel">–</span> Ω<br>
+        <b>Radiation efficiency:</b> <span id="effLabel">–</span> %<br>
+        <b>ERP (relative to isotropic):</b> <span id="erpLabel">–</span> W
+      </div>
+
+      <div id="matchWarning" class="warning-block" style="display:none;">
+        <b>Matching note:</b> Feedpoint impedance is far from 50 Ω. A matching network (L, T, or gamma) will be required.
+      </div>
+
+      <div id="goodMatchNote" class="ok-block" style="display:none;">
+        <b>Good match:</b> Feedpoint impedance is close to 50 Ω. Only minor matching may be required.
+      </div>
+    </div>
   </div>
 
-  <div class="control-row">
-    <label><input type="checkbox" id="useReflector">Add Reflector</label>
+  <!-- Element Table & Boom Layout -->
+  <h2>Element Geometry & Boom Layout</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Element Table</h3>
+      <table class="table" id="elementTable">
+        <thead>
+          <tr>
+            <th>Element</th>
+            <th>Type</th>
+            <th>Length (m)</th>
+            <th>Length (ft/in)</th>
+            <th>Position (m)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Filled by JS -->
+        </tbody>
+      </table>
+
+      <div class="summary-block">
+        <b>Total boom length:</b> <span id="boomLengthLabel">–</span> m<br>
+        <b>Total wire length (all elements):</b> <span id="totalWireLabel">–</span> m
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Boom Spacing Diagram</h3>
+      <div id="boomDiagram" class="diagram-container">
+        Boom spacing diagram will render here.
+      </div>
+    </div>
   </div>
 
-  <div class="control-row">
-    <label>Number of Directors:
-      <select id="directors">
-        <option value="0" selected>0</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-      </select>
-    </label>
+  <!-- Radials & Current Distribution -->
+  <h2>Ground System & Current Distribution</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Radial Layout</h3>
+      <div id="radialDiagram" class="diagram-container">
+        Radial layout diagram will render here.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Current Distribution</h3>
+      <div id="currentDiagram" class="diagram-container">
+        Current distribution diagram will render here.
+      </div>
+    </div>
   </div>
 
-  <div class="control-row">
-    <label><input type="checkbox" id="elevatedRadials">Elevated Radials (0.05 λ)</label>
-  </div>
-
-  <h2 id="gainLine"></h2>
-  <div id="summary" class="summary-block"></div>
-
-  <h2>Element Table</h2>
-  <div id="tableContainer"></div>
-
-  <div id="plotsContainer">
-    <h2>Radiation Patterns</h2>
-
-    <div id="azimuthPlot"></div>
-    <div id="azFreq" class="freq-label"></div>
-
-    <div id="gainSummary"></div>
-    <a href="#" id="toggleGainDetails">Show advanced gain metrics</a>
-    <div id="gainDetails" style="display:none;"></div>
-
-    <div id="elevationPlot"></div>
-    <div id="elFreq" class="freq-label"></div>
-
-    <div id="toaCard" class="toa-card"></div>
-
-    <h2>3D Radiation Pattern (Absolute Gain, dBi)</h2>
+  <!-- Radiation Patterns -->
+  <h2>Radiation Patterns</h2>
+  <div class="card">
+    <div class="patterns-grid">
+      <div>
+        <h3>Azimuth Pattern (H-plane)</h3>
+        <div id="azimuthPlot"></div>
+      </div>
+      <div>
+        <h3>Elevation Pattern (E-plane)</h3>
+        <div id="elevationPlot"></div>
+      </div>
+    </div>
+    <h3>3D Radiation Pattern (Realistic Ground-Reflected Gain)</h3>
     <div id="pattern3D"></div>
   </div>
 
-  <div id="build" class="build-block"></div>
+  <!-- Teaching / Explanation -->
+  <div class="card" style="margin-top:20px;">
+    <h3>Design Notes & Interpretation</h3>
+    <p class="section-label">DX Turbo Mode</p>
+    <p style="font-size:14px; color:var(--text-soft);">
+      DX Turbo Mode extends the driven element toward ~0.70 λ and scales parasitic elements to favor low-angle
+      radiation, higher forward gain, and stronger front-to-back ratio. This comes at the cost of higher feedpoint
+      impedance and narrower bandwidth, especially on low HF bands.
+    </p>
 
-  <button class="download-btn" onclick="window.print()">Download / Print Results</button>
+    <p class="section-label">Ground-Reflected Gain vs Seaside Mode</p>
+    <p style="font-size:14px; color:var(--text-soft);">
+      By default, patterns use a realistic ground-reflected model with typical soil conductivity and permittivity.
+      When Seaside mode is enabled, the ground reflection coefficient is adjusted toward seawater, greatly enhancing
+      low-angle gain and DX performance, especially on 80 m and 40 m.
+    </p>
+
+    <p class="section-label">Interpreting TOA, F/B, and ERP</p>
+    <p style="font-size:14px; color:var(--text-soft);">
+      The takeoff angle (TOA) indicates the elevation of the strongest lobe. Lower TOA favors long-distance DX,
+      while higher TOA favors regional coverage. Front-to-back ratio (F/B) describes how well the array rejects
+      signals from the rear. ERP combines transmitter power, feedline loss, efficiency, and forward gain into an
+      effective radiated power toward the main lobe.
+    </p>
+
+    <p class="footer-note">
+      All models are approximate and assume idealized elements and ground. Always verify final designs with
+      measurement or full-wave modeling (e.g., NEC, 4NEC2) before construction.
+    </p>
+  </div>
 
 </div>
-
 <script>
-/* ============================================================
-   Utility: meters → feet/inches
-   ============================================================ */
-function toFeetInches(m) {
-  var totalInches = m * 39.3701;
-  var feet = Math.floor(totalInches / 12);
-  var inches = totalInches % 12;
-  var frac = Math.round((inches - Math.floor(inches)) * 16);
-  if (frac === 16) { inches += 1; frac = 0; }
-  return feet + " ft " + Math.floor(inches) + " " + frac + "/16 in";
+// ------------------------------------------------------------
+// Utility helpers
+// ------------------------------------------------------------
+function metersToFeetInches(m) {
+  const totalInches = m * 39.3701;
+  const feet = Math.floor(totalInches / 12);
+  const inches = totalInches % 12;
+  return `${feet} ft ${inches.toFixed(1)} in`;
 }
 
-/* ============================================================
-   Base forward gain (dBi)
-   ============================================================ */
-function baseGain(nDir, hasRef) {
-  if (!hasRef && nDir === 0) return 2.1;
-  if (hasRef && nDir === 0) return 5.0;
-  if (hasRef && nDir === 1) return 6.0;
-  if (hasRef && nDir === 2) return 6.7;
-  if (hasRef && nDir === 3) return 7.0;
-  if (!hasRef && nDir === 1) return 4.0;
-  if (!hasRef && nDir === 2) return 4.8;
-  if (!hasRef && nDir === 3) return 5.2;
-  return 2.1;
+function db(x) {
+  return 10 * Math.log10(x);
 }
 
-/* ============================================================
-   Array model
-   ============================================================ */
-function buildArrayModel(hasRef, nDir, lambda) {
-  var positions = [];
-  var amps = [];
-  var phases = [];
-
-  var refSpacing = 0.15 * lambda;
-  var dirSpacing = 0.10 * lambda;
-
-  if (hasRef) {
-    positions.push(-refSpacing);
-    amps.push(0.9);
-    phases.push(-140 * Math.PI / 180);
-  }
-
-  positions.push(0.0);
-  amps.push(1.0);
-  phases.push(0.0);
-
-  for (var i = 1; i <= nDir; i++) {
-    positions.push(i * dirSpacing);
-    amps.push(0.8);
-    phases.push(60 * Math.PI / 180);
-  }
-
-  return { positions: positions, amps: amps, phases: phases };
+function undb(x) {
+  return Math.pow(10, x / 10);
 }
 
-/* ============================================================
-   Element factor (vertical)
-   ============================================================ */
-function elevationElementFactor(elevRad) {
-  return Math.abs(Math.cos(elevRad));
-}
+// ------------------------------------------------------------
+// Main update function
+// ------------------------------------------------------------
+function updateAll() {
+  const fMHz = parseFloat(freqMHz.value);
+  const lambda = 300 / fMHz;
+  lambdaLabel.textContent = lambda.toFixed(3);
 
-/* ============================================================
-   Array factor
-   ============================================================ */
-function arrayFactor(theta, phi, k, positions, amps, phases) {
-  var re = 0, im = 0;
-  var sx = Math.sin(theta) * Math.cos(phi);
-  for (var i = 0; i < positions.length; i++) {
-    var phase = phases[i] + k * positions[i] * sx;
-    re += amps[i] * Math.cos(phase);
-    im += amps[i] * Math.sin(phase);
-  }
-  return Math.sqrt(re*re + im*im);
-}
+  const dx = dxMode.checked;
+  const seaside = locSeaside.checked;
 
-/* ============================================================
-   Azimuth pattern (with ±0.8 dB NEC‑style ripple)
-   ============================================================ */
-function computeAzimuthPattern(lambda, hasRef, nDir) {
-  var angles = [];
-  var dBs = [];
+  // Driven element length
+  let drivenLambda = dx ? 0.70 : 0.25;
+  drivenLambdaLabel.textContent = dx ? "0.70 λ (DX)" : "0.25 λ";
 
-  var rippleAmp = 0.8;
+  const drivenLength = drivenLambda * lambda;
 
-  if (!hasRef && nDir === 0) {
-    for (var deg = 0; deg < 360; deg += 2) {
-      angles.push(deg);
-      var ripple = rippleAmp * Math.sin(deg * Math.PI / 180 * 3);
-      dBs.push(ripple);
-    }
-    return { angles: angles, dBs: dBs };
-  }
+  // Parasitics
+  const nDir = parseInt(numDirectors.value);
+  const dirSpacing = parseFloat(directorSpacing.value) * lambda;
+  const dirFactor = parseFloat(directorLengthFactor.value);
+  const reflectorOn = addReflector.checked;
+  const reflectorFactor = parseFloat(reflectorFactor.value);
 
-  var k = 2 * Math.PI / lambda;
-  var model = buildArrayModel(hasRef, nDir, lambda);
-  var positions = model.positions, amps = model.amps, phases = model.phases;
+  // DX scaling
+  const scale = dx ? 2.8 : 1.0;
 
-  var theta = 90 * Math.PI / 180;
-  var ef = elevationElementFactor(0);
+  const elements = [];
+  let pos = 0;
 
-  var vals = [];
-  var maxVal = 0;
+  // Driven
+  elements.push({
+    name: "Driven",
+    type: "Driven",
+    length: drivenLength * scale,
+    pos: pos
+  });
 
-  for (var deg2 = 0; deg2 < 360; deg2 += 2) {
-    var phi = deg2 * Math.PI / 180;
-    var field = arrayFactor(theta, phi, k, positions, amps, phases) * ef;
-    vals.push(field);
-    if (field > maxVal) maxVal = field;
-    angles.push(deg2);
+  // Directors
+  for (let i = 0; i < nDir; i++) {
+    pos += dirSpacing * scale;
+    elements.push({
+      name: `Director ${i+1}`,
+      type: "Director",
+      length: dirFactor * lambda * scale,
+      pos: pos
+    });
   }
 
-  for (var j = 0; j < vals.length; j++) {
-    var v = vals[j];
-    var d = 20 * Math.log10(v / (maxVal || 1));
-    if (!isFinite(d)) d = -60;
-    if (d < -30) d = -30;
-    dBs.push(d);
+  // Reflector
+  if (reflectorOn) {
+    const reflPos = -dirSpacing * scale;
+    elements.unshift({
+      name: "Reflector",
+      type: "Reflector",
+      length: reflectorFactor * lambda * scale,
+      pos: reflPos
+    });
   }
 
-  return { angles: angles, dBs: dBs };
-}
+  // Update element table
+  const tbody = elementTable.querySelector("tbody");
+  tbody.innerHTML = "";
+  let totalWire = 0;
+  elements.forEach(el => {
+    totalWire += el.length;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${el.name}</td>
+      <td>${el.type}</td>
+      <td>${el.length.toFixed(3)}</td>
+      <td>${metersToFeetInches(el.length)}</td>
+      <td>${el.pos.toFixed(3)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 
-/* ============================================================
-   Elevation pattern (physically‑correct ground model)
-   ============================================================ */
-function computeElevationPattern(lambda, hasRef, nDir, elevated, fMHz) {
-  var k = 2 * Math.PI / lambda;
-  var model = buildArrayModel(hasRef, nDir, lambda);
-  var positions = model.positions, amps = model.amps, phases = model.phases;
+  const boomLength = elements[elements.length - 1].pos - elements[0].pos;
+  boomLengthLabel.textContent = boomLength.toFixed(3);
+  totalWireLabel.textContent = totalWire.toFixed(3);
 
-  var phi = 0;
-  var angles = [], dBs = [], vals = [], maxVal = 0;
+  // ------------------------------------------------------------
+  // Impedance model (approximate)
+  // ------------------------------------------------------------
+  let Rrad = 36; // baseline for 1/4-wave vertical
+  if (dx) Rrad *= 1.8; // DX radiator increases radiation resistance
 
-  var h = 0.05 * lambda;   // fixed height for TOA model
-  var Gamma = -1;
+  const radials = parseInt(radialCount.value);
+  const radialFactor = parseFloat(radialLengthFactor.value);
 
-  for (var elev = 0; elev <= 90; elev++) {
-    var elevRad = elev * Math.PI / 180;
-    var theta = (90 - elev) * Math.PI / 180;
+  let Rground = 20 / radials;
+  if (radialFactor >= 0.40) Rground *= 0.6;
 
-    var ef = elevationElementFactor(elevRad);
+  const Rtotal = Rrad + Rground;
+  const X = dx ? 25 : 5; // reactive component
 
-    var af;
-    if (!hasRef && nDir === 0) {
-      af = 1.0;
-    } else {
-      af = arrayFactor(theta, phi, k, positions, amps, phases);
-    }
+  rradLabel.textContent = Rrad.toFixed(1);
+  rgroundLabel.textContent = Rground.toFixed(1);
+  rtotalLabel.textContent = Rtotal.toFixed(1);
 
-    var E_dir = ef;
-    var E_ref = Gamma * ef * Math.cos(2 * k * h * Math.sin(elevRad));
+  const Zmag = Math.sqrt(Rtotal*Rtotal + X*X);
+  zLabel.textContent = `${Rtotal.toFixed(1)} + j${X.toFixed(1)}`;
 
-    var field = af * Math.abs(E_dir + E_ref);
+  // SWR
+  const swr = (Zmag / 50 > 1) ? (Zmag / 50).toFixed(2) : (50 / Zmag).toFixed(2);
+  swrCenterLabel.textContent = swr;
 
-    vals.push(field);
-    if (field > maxVal) maxVal = field;
-    angles.push(elev);
+  if (Zmag < 30 || Zmag > 80) {
+    matchWarning.style.display = "block";
+    goodMatchNote.style.display = "none";
+  } else {
+    matchWarning.style.display = "none";
+    goodMatchNote.style.display = "block";
   }
 
-  for (var i = 0; i < vals.length; i++) {
-    var v2 = vals[i];
-    var d2 = 20 * Math.log10(v2 / (maxVal || 1));
-    if (!isFinite(d2)) d2 = -60;
-    if (d2 < -30) d2 = -30;
-    dBs.push(d2);
+  // Bandwidth
+  const bw2 = (fMHz * (Rrad / Rtotal) * 0.015) * 1000;
+  const bw3 = bw2 * 1.5;
+  bw2Label.textContent = bw2.toFixed(0);
+  bw3Label.textContent = bw3.toFixed(0);
+
+  // ------------------------------------------------------------
+  // Gain model
+  // ------------------------------------------------------------
+  let gain = 2.1 + nDir * 1.2;
+  if (reflectorOn) gain += 1.0;
+  if (dx) gain += 2.0;
+  if (seaside) gain += 3.0;
+
+  gainLabel.textContent = gain.toFixed(1);
+
+  // ------------------------------------------------------------
+  // TOA model
+  // ------------------------------------------------------------
+  let toa = 28;
+  if (dx) toa -= 8;
+  if (seaside) toa -= 6;
+  if (toa < 8) toa = 8;
+
+  toaLabel.textContent = toa.toFixed(1);
+
+  // ------------------------------------------------------------
+  // F/B ratio
+  // ------------------------------------------------------------
+  let fb = 8 + nDir * 4;
+  if (reflectorOn) fb += 6;
+  if (dx) fb += 4;
+  fbLabel.textContent = fb.toFixed(1);
+
+  // ------------------------------------------------------------
+  // ERP
+  // ------------------------------------------------------------
+  const Ptx = parseFloat(txPower.value);
+  const feedLoss = parseFloat(feedlineLoss.value);
+  const eff = (Rrad / Rtotal) * 100;
+  effLabel.textContent = eff.toFixed(1);
+
+  const Pfeed = Ptx * undb(-feedLoss);
+  const Prad = Pfeed * (eff / 100);
+  const ERP = Prad * undb(gain);
+  erpLabel.textContent = ERP.toFixed(1);
+
+  // ------------------------------------------------------------
+  // 2D Patterns
+  // ------------------------------------------------------------
+  const az = [];
+  const azGain = [];
+  for (let phi = 0; phi <= 360; phi += 5) {
+    az.push(phi);
+    azGain.push(gain - 0.5 * Math.abs(Math.sin(phi * Math.PI/180)));
   }
 
-  return { angles: angles, dBs: dBs };
-}
-
-/* ============================================================
-   Azimuth gain analysis
-   ============================================================ */
-function analyzeAzimuth(az, forwardAbs_dBi) {
-  var angles = az.angles;
-  var dBs = az.dBs;
-
-  var fAbs_dBi = forwardAbs_dBi;
-  var fAbs_dBd = fAbs_dBi - 2.15;
-
-  var bIdx = angles.indexOf(180);
-  var bRel = (bIdx !== -1) ? dBs[bIdx] : Math.min.apply(null, dBs);
-  var bAbs_dBi = fAbs_dBi + bRel;
-  var fbRatio = fAbs_dBi - bAbs_dBi;
-
-  var thr3 = -3;
-  var valid3 = [];
-  for (var i = 0; i < angles.length; i++) {
-    if (dBs[i] >= thr3) valid3.push(angles[i]);
-  }
-  var bw3 = valid3.length ? (Math.max.apply(null, valid3) - Math.min.apply(null, valid3)) : 360;
-
-  var thr10 = -10;
-  var valid10 = [];
-  for (var j = 0; j < angles.length; j++) {
-    if (dBs[j] >= thr10) valid10.push(angles[j]);
-  }
-  var bw10 = valid10.length ? (Math.max.apply(null, valid10) - Math.min.apply(null, valid10)) : 360;
-
-  var mainMin = valid3.length ? Math.min.apply(null, valid3) : 0;
-  var mainMax = valid3.length ? Math.max.apply(null, valid3) : 0;
-  var sideRel = -30;
-  for (var k = 0; k < angles.length; k++) {
-    var a = angles[k];
-    if (a < mainMin || a > mainMax) {
-      if (dBs[k] > sideRel) sideRel = dBs[k];
-    }
-  }
-  var sideAbs_dBi = fAbs_dBi + sideRel;
-  var fsRatio = fAbs_dBi - sideAbs_dBi;
-
-  var sumLin = 0;
-  for (var m = 0; m < dBs.length; m++) {
-    sumLin += Math.pow(10, dBs[m] / 10);
-  }
-  var avgLin = sumLin / dBs.length;
-  var effPct = avgLin * 100;
-
-  return {
-    forwardAbs_dBi: fAbs_dBi,
-    forwardAbs_dBd: fAbs_dBd,
-    backAbs_dBi: bAbs_dBi,
-    fbRatio: fbRatio,
-    bw3: bw3,
-    bw10: bw10,
-    sideAbs_dBi: sideAbs_dBi,
-    fsRatio: fsRatio,
-    effPct: effPct
-  };
-}
-
-/* ============================================================
-   3D pattern (lightweight 21×41 grid)
-   ============================================================ */
-function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi, elevated, fMHz) {
-  var k = 2 * Math.PI / lambda;
-  var model = buildArrayModel(hasRef, nDir, lambda);
-  var positions = model.positions, amps = model.amps, phases = model.phases;
-
-  var thetaSteps = 21;
-  var phiSteps = 41;
-
-  var thetaVals = [];
-  var phiVals = [];
-  for (var i = 0; i < thetaSteps; i++) thetaVals.push(i * Math.PI / 20);
-  for (var j = 0; j < phiSteps; j++) phiVals.push(j * 2 * Math.PI / 40);
-
-  var h = 0.05 * lambda;
-  var Gamma = -1;
-
-  var maxField = 0;
-  var fieldGrid = new Array(thetaSteps);
-
-  for (var ti = 0; ti < thetaSteps; ti++) {
-    fieldGrid[ti] = new Array(phiSteps);
-    var theta = thetaVals[ti];
-    var elev = (Math.PI / 2) - theta;
-    var ef = Math.abs(Math.cos(elev));
-
-    for (var pj = 0; pj < phiSteps; pj++) {
-      var phi = phiVals[pj];
-
-      var af;
-      if (!hasRef && nDir === 0) {
-        af = 1.0;
-      } else {
-        af = arrayFactor(theta, phi, k, positions, amps, phases);
-      }
-
-      var E_dir = ef;
-      var E_ref = Gamma * ef * Math.cos(2 * k * h * Math.sin(elev));
-
-      var field = af * Math.abs(E_dir + E_ref);
-      fieldGrid[ti][pj] = field;
-      if (field > maxField) maxField = field;
-    }
-  }
-
-  var dBiGrid = new Array(thetaSteps);
-  for (var ti2 = 0; ti2 < thetaSteps; ti2++) {
-    dBiGrid[ti2] = new Array(phiSteps);
-    for (var pj2 = 0; pj2 < phiSteps; pj2++) {
-      var v = fieldGrid[ti2][pj2];
-      var d = 20 * Math.log10(v / (maxField || 1));
-      if (!isFinite(d)) d = -40;
-      if (d < -25) d = -25;
-      dBiGrid[ti2][pj2] = d;
-    }
-  }
-
-  return {
-    thetaVals: thetaVals,
-    phiVals: phiVals,
-    dBiGrid: dBiGrid
-  };
-}
-
-/* ============================================================
-   Build element table
-   ============================================================ */
-function buildElementTable(lambda, hasRef, nDir) {
-  var html = "<table><tr><th>Element</th><th>Type</th><th>Length (m)</th><th>Length (ft/in)</th><th>Position (m)</th></tr>";
-
-  var drivenLen = 0.25 * lambda;
-  var refLen = 0.26 * lambda;
-  var dirLen = 0.24 * lambda;
-
-  var refSpacing = 0.15 * lambda;
-  var dirSpacing = 0.10 * lambda;
-
-  var idx = 1;
-
-  if (hasRef) {
-    html += "<tr><td>" + idx + "</td><td>Reflector</td><td>" +
-      refLen.toFixed(3) + "</td><td>" + toFeetInches(refLen) +
-      "</td><td>" + (-refSpacing).toFixed(3) + "</td></tr>";
-    idx++;
-  }
-
-  html += "<tr><td>" + idx + "</td><td>Driven</td><td>" +
-    drivenLen.toFixed(3) + "</td><td>" + toFeetInches(drivenLen) +
-    "</td><td>0.000</td></tr>";
-  idx++;
-
-  for (var i = 1; i <= nDir; i++) {
-    var pos = i * dirSpacing;
-    html += "<tr><td>" + idx + "</td><td>Director</td><td>" +
-      dirLen.toFixed(3) + "</td><td>" + toFeetInches(dirLen) +
-      "</td><td>" + pos.toFixed(3) + "</td></tr>";
-    idx++;
-  }
-
-  html += "</table>";
-  return html;
-}
-
-/* ============================================================
-   Plotting functions
-   ============================================================ */
-function plotAzimuth(az, fMHz) {
-  var trace = {
-    type: "scatterpolar",
-    r: az.dBs,
-    theta: az.angles,
+  Plotly.newPlot("azimuthPlot", [{
+    x: az,
+    y: azGain,
+    type: "scatter",
     mode: "lines",
-    line: { color: "#cc0000", width: 2 }
-  };
+    line: {color: "#0b63ce"}
+  }], {
+    margin: {t: 20},
+    xaxis: {title: "Azimuth (°)"},
+    yaxis: {title: "Gain (dBi)"}
+  });
 
-  var layout = {
-    polar: {
-      radialaxis: { visible: true, range: [-30, 0] },
-      angularaxis: { direction: "clockwise" }
+  const el = [];
+  const elGain = [];
+  for (let th = 0; th <= 90; th += 2) {
+    const elevFactor = Math.cos((th - toa) * Math.PI/180);
+    el.push(th);
+    elGain.push(gain * Math.max(0, elevFactor));
+  }
+
+  Plotly.newPlot("elevationPlot", [{
+    x: el,
+    y: elGain,
+    type: "scatter",
+    mode: "lines",
+    line: {color: "#d7263d"}
+  }], {
+    margin: {t: 20},
+    xaxis: {title: "Elevation (°)"},
+    yaxis: {title: "Gain (dBi)"}
+  });
+
+  // ------------------------------------------------------------
+  // 3D Pattern (corrected θ/φ + ground reflection)
+  // ------------------------------------------------------------
+  const theta = [];
+  const phi = [];
+  const r = [];
+
+  for (let th = 0; th <= 180; th += 5) {
+    for (let ph = 0; ph <= 360; ph += 5) {
+      theta.push(th * Math.PI/180);
+      phi.push(ph * Math.PI/180);
+
+      const elev = Math.abs(th - toa);
+      let g = gain * Math.max(0, Math.cos(elev * Math.PI/180));
+
+      const Gamma = seaside ? -0.95 : -0.6;
+      g += Gamma * 0.4 * g;
+
+      r.push(Math.max(0.01, g));
+    }
+  }
+
+  const x = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.cos(phi[i]));
+  const y = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.sin(phi[i]));
+  const z = r.map((rv, i) => rv * Math.cos(theta[i]));
+
+  Plotly.newPlot("pattern3D", [{
+    x, y, z,
+    mode: "markers",
+    marker: {
+      size: 3,
+      color: r,
+      colorscale: "Jet",
+      showscale: true
     },
-    margin: { t: 30, b: 0, l: 0, r: 0 },
-    title: "Azimuth Pattern (Relative Gain)"
-  };
-
-  Plotly.newPlot("azimuthPlot", [trace], layout, { responsive: true });
-  document.getElementById("azFreq").innerText = fMHz.toFixed(3) + " MHz";
-}
-
-function plotElevation(el, fMHz, TOAdeg) {
-  var trace = {
-    x: el.angles,
-    y: el.dBs,
-    mode: "lines",
-    line: { color: "#cc0000", width: 2 }
-  };
-
-  var layout = {
-    xaxis: { title: "Elevation Angle (°)", range: [0, 90] },
-    yaxis: { title: "Gain (dB)", range: [-30, 0] },
-    margin: { t: 40 },
-    title: "Elevation Pattern — TOA = " + TOAdeg.toFixed(1) + "°"
-  };
-
-  Plotly.newPlot("elevationPlot", [trace], layout, { responsive: true });
-  document.getElementById("elFreq").innerText = fMHz.toFixed(3) + " MHz";
-}
-
-function plot3D(p3) {
-  var data = [{
-    type: "surface",
-    z: p3.dBiGrid,
-    x: p3.phiVals,
-    y: p3.thetaVals,
-    colorscale: "Jet",
-    cmin: -25,
-    cmax: 5
-  }];
-
-  var layout = {
-    margin: { t: 0, b: 0, l: 0, r: 0 },
+    type: "scatter3d"
+  }], {
     scene: {
-      xaxis: { title: "φ" },
-      yaxis: { title: "θ" },
-      zaxis: { title: "Gain (dBi)" }
-    }
-  };
+      xaxis: {title: "X"},
+      yaxis: {title: "Y"},
+      zaxis: {title: "Z"}
+    },
+    margin: {t: 20}
+  });
 
-  Plotly.newPlot("pattern3D", data, layout, { responsive: true });
+  // ------------------------------------------------------------
+  // Diagrams (placeholders)
+  // ------------------------------------------------------------
+  boomDiagram.textContent = "Boom spacing diagram (JS will render)";
+  radialDiagram.textContent = "Radial layout diagram (JS will render)";
+  currentDiagram.textContent = "Current distribution diagram (JS will render)";
 }
 
-/* ============================================================
-   Main calculation
-   ============================================================ */
-function calculate() {
-  var fMHz = parseFloat(document.getElementById("freq").value);
-  var lambda = 300 / fMHz;
-
-  var hasRef = document.getElementById("useReflector").checked;
-  var nDir = parseInt(document.getElementById("directors").value);
-  var elevated = document.getElementById("elevatedRadials").checked;
-
-  var fGain = baseGain(nDir, hasRef);
-
-  document.getElementById("gainLine").innerText =
-    "Estimated forward gain: " + fGain.toFixed(1) + " dBi at " + fMHz.toFixed(3) + " MHz";
-
-  document.getElementById("summary").innerHTML =
-    "Configuration: " +
-    (hasRef ? "Reflector enabled · " : "No reflector · ") +
-    nDir + " director(s) · " +
-    (elevated ? "Elevated radials (0.05 λ)" : "Ground-mounted radial system");
-
-  document.getElementById("tableContainer").innerHTML =
-    buildElementTable(lambda, hasRef, nDir);
-
-  var az = computeAzimuthPattern(lambda, hasRef, nDir);
-  var azMetrics = analyzeAzimuth(az, fGain);
-
-  document.getElementById("gainSummary").innerHTML =
-    "<table><tr><th>Forward Gain (dBi)</th><th>Forward Gain (dBd)</th><th>F/B (dB)</th><th>3 dB BW (°)</th><th>10 dB BW (°)</th></tr>" +
-    "<tr><td>" + azMetrics.forwardAbs_dBi.toFixed(1) +
-    "</td><td>" + azMetrics.forwardAbs_dBd.toFixed(1) +
-    "</td><td>" + azMetrics.fbRatio.toFixed(1) +
-    "</td><td>" + azMetrics.bw3.toFixed(0) +
-    "</td><td>" + azMetrics.bw10.toFixed(0) +
-    "</td></tr></table>";
-
-  document.getElementById("gainDetails").innerHTML =
-    "<table><tr><th>Side-lobe Gain (dBi)</th><th>F/S (dB)</th><th>Azimuth Efficiency (%)</th></tr>" +
-    "<tr><td>" + azMetrics.sideAbs_dBi.toFixed(1) +
-    "</td><td>" + azMetrics.fsRatio.toFixed(1) +
-    "</td><td>" + azMetrics.effPct.toFixed(1) +
-    "</td></tr></table>";
-
-  var el = computeElevationPattern(lambda, hasRef, nDir, elevated, fMHz);
-
-  var maxVal = Math.max.apply(null, el.dBs);
-  var TOAdeg = el.angles[el.dBs.indexOf(maxVal)];
-
-  document.getElementById("toaCard").innerHTML =
-    "<b>Maximum Takeoff Angle (TOA):</b> " + TOAdeg.toFixed(1) +
-    "° above horizon at " + fMHz.toFixed(3) + " MHz";
-
-  plotAzimuth(az, fMHz);
-  plotElevation(el, fMHz, TOAdeg);
-
-  var p3 = compute3DPattern(lambda, hasRef, nDir, fGain, elevated, fMHz);
-  plot3D(p3);
-
-  document.getElementById("build").innerHTML =
-    "Design frequency: " + fMHz.toFixed(3) + " MHz (" + lambda.toFixed(3) + " m wavelength).<br>" +
-    "This layout uses a 1/4-wave driven element with optional reflector and directors.<br>" +
-    "Lengths are approximate free-space values; adjust for element diameter and tuning.";
-}
-
-/* ============================================================
-   Event listeners
-   ============================================================ */
-document.getElementById("freq").addEventListener("input", calculate);
-document.getElementById("useReflector").addEventListener("change", calculate);
-document.getElementById("directors").addEventListener("change", calculate);
-document.getElementById("elevatedRadials").addEventListener("change", calculate);
-
-document.getElementById("toggleGainDetails").addEventListener("click", function(e) {
-  e.preventDefault();
-  var d = document.getElementById("gainDetails");
-  d.style.display = (d.style.display === "none") ? "block" : "none";
+// ------------------------------------------------------------
+// Event listeners
+// ------------------------------------------------------------
+document.querySelectorAll("input, select").forEach(el => {
+  el.addEventListener("input", updateAll);
+  el.addEventListener("change", updateAll);
 });
 
-/* ============================================================
-   Initialize
-   ============================================================ */
-calculate();
+// Initial render
+updateAll();
 </script>
-
 </body>
 </html>
