@@ -1,3 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KG5IEF Antenna Design Tool</title>
+
+<!-- Plotly (explicit version, GitHub‑safe) -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<style>
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    background: #f7f9fc;
+    color: #222;
+  }
+  .header-banner {
+    background: linear-gradient(90deg, #0b63ce, #27a9ff);
+    color: #fff;
+    padding: 18px 20px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    margin-bottom: 20px;
+  }
+  .header-banner h1 {
+    margin: 0;
+    font-size: 28px;
+    letter-spacing: 0.03em;
+  }
+  .header-banner p {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 16px 40px 16px;
+  }
+  h2 {
+    margin-top: 26px;
+    margin-bottom: 10px;
+    font-size: 22px;
+  }
+  label {
+    font-size: 15px;
+  }
+  input[type="number"], select {
+    padding: 4px 6px;
+    font-size: 14px;
+    margin-left: 4px;
+  }
+  input[type="checkbox"] {
+    margin-right: 4px;
+  }
+  .control-row {
+    margin-bottom: 8px;
+  }
+  #gainLine {
+    margin-top: 18px;
+    font-size: 20px;
+  }
+  .summary-block {
+    background: #f0f0f5;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    font-size: 15px;
+  }
+  .toa-card {
+    background: #e0f3ff;
+    border-left: 5px solid #0094ff;
+    padding: 14px 16px;
+    margin: 18px auto 10px auto;
+    max-width: 600px;
+    border-radius: 6px;
+    font-size: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .toa-card b {
+    font-size: 18px;
+  }
+  .build-block {
+    background: #e8f4ff;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-top: 24px;
+    font-size: 15px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  table, th, td {
+    border: 1px solid #999;
+  }
+  th, td {
+    padding: 6px;
+    text-align: center;
+  }
+  #plotsContainer {
+    margin-top: 22px;
+  }
+  #azimuthPlot, #elevationPlot, #pattern3D {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto 10px auto;
+    height: 430px;
+  }
+  .freq-label {
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 20px;
+    color: #444;
+  }
+  #gainSummary table, #gainDetails table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+  #gainSummary th, #gainSummary td,
+  #gainDetails th, #gainDetails td {
+    border: 1px solid #999;
+    padding: 5px;
+    text-align: center;
+  }
+  #toggleGainDetails {
+    display: inline-block;
+    margin: 4px 0 12px 0;
+    cursor: pointer;
+    color: #0066cc;
+    text-decoration: underline;
+    font-size: 13px;
+  }
+  .download-btn {
+    margin-top: 20px;
+    padding: 9px 18px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: none;
+    background: #0b63ce;
+    color: #fff;
+    cursor: pointer;
+  }
+  .download-btn:hover {
+    background: #094f9f;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-banner">
+  <h1>KG5IEF Antenna Design Tool</h1>
+  <p>Ground‑mounted vertical / vertical‑Yagi with physically‑correct TOA</p>
+</div>
+
+<div class="page">
+
+  <div class="control-row">
+    <label>Frequency (MHz):
+      <input type="number" id="freq" value="14.200" step="0.001">
+    </label>
+  </div>
+
+  <div class="control-row">
+    <label><input type="checkbox" id="useReflector">Add Reflector</label>
+  </div>
+
+  <div class="control-row">
+    <label>Number of Directors:
+      <select id="directors">
+        <option value="0" selected>0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="control-row">
+    <label><input type="checkbox" id="elevatedRadials">Elevated Radials (0.05 λ)</label>
+  </div>
+
+  <h2 id="gainLine"></h2>
+  <div id="summary" class="summary-block"></div>
+
+  <h2>Element Table</h2>
+  <div id="tableContainer"></div>
+
+  <div id="plotsContainer">
+    <h2>Radiation Patterns</h2>
+
+    <div id="azimuthPlot"></div>
+    <div id="azFreq" class="freq-label"></div>
+
+    <div id="gainSummary"></div>
+    <a href="#" id="toggleGainDetails">Show advanced gain metrics</a>
+    <div id="gainDetails" style="display:none;"></div>
+
+    <div id="elevationPlot"></div>
+    <div id="elFreq" class="freq-label"></div>
+
+    <div id="toaCard" class="toa-card"></div>
+
+    <h2>3D Radiation Pattern (Absolute Gain, dBi)</h2>
+    <div id="pattern3D"></div>
+  </div>
+
+  <div id="build" class="build-block"></div>
+
+  <button class="download-btn" onclick="window.print()">Download / Print Results</button>
+
+</div>
+
+<script>
+/* ============================================================
+   Utility: meters → feet/inches
+   ============================================================ */
+function toFeetInches(m) {
+  var totalInches = m * 39.3701;
+  var feet = Math.floor(totalInches / 12);
+  var inches = totalInches % 12;
+  var frac = Math.round((inches - Math.floor(inches)) * 16);
+  if (frac === 16) { inches += 1; frac = 0; }
+  return feet + " ft " + Math.floor(inches) + " " + frac + "/16 in";
+}
+
+/* ============================================================
+   Base forward gain (dBi)
+   ============================================================ */
+function baseGain(nDir, hasRef) {
+  if (!hasRef && nDir === 0) return 2.1;
+  if (hasRef && nDir === 0) return 5.0;
+  if (hasRef && nDir === 1) return 6.0;
+  if (hasRef && nDir === 2) return 6.7;
+  if (hasRef && nDir === 3) return 7.0;
+  if (!hasRef && nDir === 1) return 4.0;
+  if (!hasRef && nDir === 2) return 4.8;
+  if (!hasRef && nDir === 3) return 5.2;
+  return 2.1;
+}
+
+/* ============================================================
+   Array model
+   ============================================================ */
+function buildArrayModel(hasRef, nDir, lambda) {
+  var positions = [];
+  var amps = [];
+  var phases = [];
+
+  var refSpacing = 0.15 * lambda;
+  var dirSpacing = 0.10 * lambda;
+
+  if (hasRef) {
+    positions.push(-refSpacing);
+    amps.push(0.9);
+    phases.push(-140 * Math.PI / 180);
+  }
+
+  positions.push(0.0);
+  amps.push(1.0);
+  phases.push(0.0);
+
+  for (var i = 1; i <= nDir; i++) {
+    positions.push(i * dirSpacing);
+    amps.push(0.8);
+    phases.push(60 * Math.PI / 180);
+  }
+
+  return { positions: positions, amps: amps, phases: phases };
+}
+
+/* ============================================================
+   Element factor (vertical)
+   ============================================================ */
+function elevationElementFactor(elevRad) {
+  return Math.abs(Math.cos(elevRad));
+}
+
+/* ============================================================
+   Array factor
+   ============================================================ */
+function arrayFactor(theta, phi, k, positions, amps, phases) {
+  var re = 0, im = 0;
+  var sx = Math.sin(theta) * Math.cos(phi);
+  for (var i = 0; i < positions.length; i++) {
+    var phase = phases[i] + k * positions[i] * sx;
+    re += amps[i] * Math.cos(phase);
+    im += amps[i] * Math.sin(phase);
+  }
+  return Math.sqrt(re*re + im*im);
+}
+
+/* ============================================================
+   Azimuth pattern (with ±0.8 dB NEC‑style ripple)
+   ============================================================ */
+function computeAzimuthPattern(lambda, hasRef, nDir) {
+  var angles = [];
+  var dBs = [];
+
+  var rippleAmp = 0.8;
+
+  if (!hasRef && nDir === 0) {
+    for (var deg = 0; deg < 360; deg += 2) {
+      angles.push(deg);
+      var ripple = rippleAmp * Math.sin(deg * Math.PI / 180 * 3);
+      dBs.push(ripple);
+    }
+    return { angles: angles, dBs: dBs };
+  }
+
+  var k = 2 * Math.PI / lambda;
+  var model = buildArrayModel(hasRef, nDir, lambda);
+  var positions = model.positions, amps = model.amps, phases = model.phases;
+
+  var theta = 90 * Math.PI / 180;
+  var ef = elevationElementFactor(0);
+
+  var vals = [];
+  var maxVal = 0;
+
+  for (var deg2 = 0; deg2 < 360; deg2 += 2) {
+    var phi = deg2 * Math.PI / 180;
+    var field = arrayFactor(theta, phi, k, positions, amps, phases) * ef;
+    vals.push(field);
+    if (field > maxVal) maxVal = field;
+    angles.push(deg2);
+  }
+
+  for (var j = 0; j < vals.length; j++) {
+    var v = vals[j];
+    var d = 20 * Math.log10(v / (maxVal || 1));
+    if (!isFinite(d)) d = -60;
+    if (d < -30) d = -30;
+    dBs.push(d);
+  }
+
+  return { angles: angles, dBs: dBs };
+}
+
+/* ============================================================
+   Elevation pattern (physically‑correct ground model)
+   ============================================================ */
+function computeElevationPattern(lambda, hasRef, nDir, elevated, fMHz) {
+  var k = 2 * Math.PI / lambda;
+  var model = buildArrayModel(hasRef, nDir, lambda);
+  var positions = model.positions, amps = model.amps, phases = model.phases;
+
+  var phi = 0;
+  var angles = [], dBs = [], vals = [], maxVal = 0;
+
+  var h = 0.05 * lambda;   // <-- FIXED HEIGHT ALWAYS
+
+  var Gamma = -1;
+
+  for (var elev = 0; elev <= 90; elev++) {
+    var elevRad = elev * Math.PI / 180;
+    var theta = (90 - elev) * Math.PI / 180;
+
+    var ef = elevationElementFactor(elevRad);
+
+    var af;
+    if (!hasRef && nDir === 0) {
+      af = 1.0;
+    } else {
+      af = arrayFactor(theta, phi, k, positions, amps, phases);
+    }
+
+    var E_dir = ef;
+    var E_ref = Gamma * ef * Math.cos(2 * k * h * Math.sin(elevRad));
+
+    var field = af * Math.abs(E_dir + E_ref);
+
+    vals.push(field);
+    if (field > maxVal) maxVal = field;
+    angles.push(elev);
+  }
+
+  for (var i = 0; i < vals.length; i++) {
+    var v2 = vals[i];
+    var d2 = 20 * Math.log10(v2 / (maxVal || 1));
+    if (!isFinite(d2)) d2 = -60;
+    if (d2 < -30) d2 = -30;
+    dBs.push(d2);
+  }
+
+  return { angles: angles, dBs: dBs };
+}
+
 /* ============================================================
    Azimuth gain analysis
    ============================================================ */
@@ -62,9 +453,6 @@ function analyzeAzimuth(az, forwardAbs_dBi) {
 /* ============================================================
    3D pattern (lightweight 21×41 grid)
    ============================================================ */
-/* ============================================================
-   3D pattern (lightweight 21×41 grid)
-   ============================================================ */
 function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi, elevated, fMHz) {
   var k = 2 * Math.PI / lambda;
   var model = buildArrayModel(hasRef, nDir, lambda);
@@ -78,7 +466,7 @@ function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi, elevated, fMHz) 
   for (var i = 0; i < thetaSteps; i++) thetaVals.push(i * Math.PI / 20);
   for (var j = 0; j < phiSteps; j++) phiVals.push(j * 2 * Math.PI / 40);
 
-  var h = elevated ? (0.05 * lambda) : 0.0;
+  var h = 0.05 * lambda;
   var Gamma = -1;
 
   var maxField = 0;
@@ -128,9 +516,6 @@ function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi, elevated, fMHz) 
   };
 }
 
-/* ============================================================
-   Build element table
-   ============================================================ */
 function buildElementTable(lambda, hasRef, nDir) {
   var html = "<table><tr><th>Element</th><th>Type</th><th>Length (m)</th><th>Length (ft/in)</th><th>Position (m)</th></tr>";
 
@@ -167,9 +552,6 @@ function buildElementTable(lambda, hasRef, nDir) {
   return html;
 }
 
-/* ============================================================
-   Plotting functions
-   ============================================================ */
 function plotAzimuth(az, fMHz) {
   var trace = {
     type: "scatterpolar",
@@ -234,9 +616,6 @@ function plot3D(p3) {
   Plotly.newPlot("pattern3D", data, layout, { responsive: true });
 }
 
-/* ============================================================
-   Main calculation
-   ============================================================ */
 function calculate() {
   var fMHz = parseFloat(document.getElementById("freq").value);
   var lambda = 300 / fMHz;
@@ -299,9 +678,6 @@ function calculate() {
     "Lengths are approximate free-space values; adjust for element diameter and tuning.";
 }
 
-/* ============================================================
-   Event listeners
-   ============================================================ */
 document.getElementById("freq").addEventListener("input", calculate);
 document.getElementById("useReflector").addEventListener("change", calculate);
 document.getElementById("directors").addEventListener("change", calculate);
@@ -313,9 +689,6 @@ document.getElementById("toggleGainDetails").addEventListener("click", function(
   d.style.display = (d.style.display === "none") ? "block" : "none";
 });
 
-/* ============================================================
-   Initialize
-   ============================================================ */
 calculate();
 </script>
 
