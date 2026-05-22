@@ -21,9 +21,7 @@
     --border-soft: #d0d7e2;
   }
 
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
   body {
     margin: 0;
@@ -148,11 +146,6 @@
     color: #006b8f;
   }
 
-  .badge-warning {
-    background: #ffe6e6;
-    color: #b30000;
-  }
-
   .summary-block {
     background: #f0f2f8;
     padding: 10px 12px;
@@ -161,9 +154,7 @@
     margin-top: 6px;
   }
 
-  .summary-block b {
-    font-weight: 600;
-  }
+  .summary-block b { font-weight: 600; }
 
   .warning-block {
     margin-top: 10px;
@@ -236,12 +227,8 @@
   }
 
   @media (max-width: 900px) {
-    .grid {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .patterns-grid {
-      grid-template-columns: minmax(0, 1fr);
-    }
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .patterns-grid { grid-template-columns: minmax(0, 1fr); }
   }
 </style>
 </head>
@@ -293,7 +280,7 @@
       <div class="form-row">
         <label for="reflectorFactor">Reflector length factor:</label>
         <input type="number" id="reflectorFactor" value="1.05" step="0.01" min="1.00" max="1.10">
-        <span class="inline-label">Driven length (λ): <span id="drivenLambdaLabel">0.25</span></span>
+        <span class="inline-label">Driven length (λ): <span id="drivenLambdaLabel">0.25 λ</span></span>
       </div>
 
       <div class="section-label">Height & Location</div>
@@ -322,7 +309,6 @@
           <input type="checkbox" id="dxMode">
           <span class="badge badge-dx">DX Turbo</span>
         </span>
-        <span class="inline-label">Radiator: <span id="dxRadiatorLabel">0.25 λ (normal)</span></span>
       </div>
 
       <div id="dxWarning" class="warning-block" style="display:none;">
@@ -522,78 +508,105 @@ function metersToFeetInches(m) {
   return `${feet} ft ${inches.toFixed(1)} in`;
 }
 
-function db(x) {
-  return 10 * Math.log10(x);
-}
-
-function undb(x) {
-  return Math.pow(10, x / 10);
-}
+function db(x) { return 10 * Math.log10(x); }
+function undb(x) { return Math.pow(10, x / 10); }
 
 // ------------------------------------------------------------
 // Main update function
 // ------------------------------------------------------------
 function updateAll() {
-  const fMHz = parseFloat(freqMHz.value);
-  const lambda = 300 / fMHz;
-  lambdaLabel.textContent = lambda.toFixed(3);
 
+  // --- DOM lookups (safe, explicit) ---
+  const fMHzEl = document.getElementById("freqMHz");
+  const lambdaLabel = document.getElementById("lambdaLabel");
+  const designFreqLabel = document.getElementById("designFreqLabel");
+  const designLambdaLabel = document.getElementById("designLambdaLabel");
+  const drivenLambdaLabel = document.getElementById("drivenLambdaLabel");
+
+  const addReflector = document.getElementById("addReflector");
+  const numDirectors = document.getElementById("numDirectors");
+  const directorSpacing = document.getElementById("directorSpacing");
+  const directorLengthFactor = document.getElementById("directorLengthFactor");
+  const reflectorFactor = document.getElementById("reflectorFactor");
+
+  const dxMode = document.getElementById("dxMode");
+  const locSeaside = document.getElementById("locSeaside");
+
+  const radialCountEl = document.getElementById("radialCount");
+  const radialLengthFactorEl = document.getElementById("radialLengthFactor");
+  const elevatedRadials = document.getElementById("elevatedRadials");
+
+  const txPowerEl = document.getElementById("txPower");
+  const feedlineLossEl = document.getElementById("feedlineLoss");
+
+  const dxWarning = document.getElementById("dxWarning");
+  const radialWarning = document.getElementById("radialWarning");
+  const matchWarning = document.getElementById("matchWarning");
+  const goodMatchNote = document.getElementById("goodMatchNote");
+
+  // --- Frequency & wavelength ---
+  const fMHz = parseFloat(fMHzEl.value);
+  const lambda = 300 / fMHz;
+
+  lambdaLabel.textContent = lambda.toFixed(3);
+  designFreqLabel.textContent = fMHz.toFixed(3) + " MHz";
+  designLambdaLabel.textContent = lambda.toFixed(3) + " m";
+
+  // --- DX Mode ---
   const dx = dxMode.checked;
   const seaside = locSeaside.checked;
 
-  // Driven element length
   let drivenLambda = dx ? 0.70 : 0.25;
   drivenLambdaLabel.textContent = dx ? "0.70 λ (DX)" : "0.25 λ";
 
   const drivenLength = drivenLambda * lambda;
-
-  // Parasitics
-  const nDir = parseInt(numDirectors.value);
-  const dirSpacing = parseFloat(directorSpacing.value) * lambda;
-  const dirFactor = parseFloat(directorLengthFactor.value);
-  const reflectorOn = addReflector.checked;
-  const reflectorFactor = parseFloat(reflectorFactor.value);
-
-  // DX scaling
   const scale = dx ? 2.8 : 1.0;
 
+  // --- Parasitics ---
+  const nDir = parseInt(numDirectors.value);
+  const dSpacing = parseFloat(directorSpacing.value) * lambda;
+  const dFactor = parseFloat(directorLengthFactor.value);
+  const reflOn = addReflector.checked;
+  const reflFactor = parseFloat(reflectorFactor.value);
+
+  // --- Build element list ---
   const elements = [];
   let pos = 0;
 
-  // Driven
+  if (reflOn) {
+    elements.push({
+      name: "Reflector",
+      type: "Reflector",
+      length: reflFactor * lambda * scale,
+      pos: -dSpacing * scale
+    });
+  }
+
   elements.push({
     name: "Driven",
     type: "Driven",
     length: drivenLength * scale,
-    pos: pos
+    pos: 0
   });
 
-  // Directors
+  pos = 0;
   for (let i = 0; i < nDir; i++) {
-    pos += dirSpacing * scale;
+    pos += dSpacing * scale;
     elements.push({
       name: `Director ${i+1}`,
       type: "Director",
-      length: dirFactor * lambda * scale,
+      length: dFactor * lambda * scale,
       pos: pos
     });
   }
 
-  // Reflector
-  if (reflectorOn) {
-    const reflPos = -dirSpacing * scale;
-    elements.unshift({
-      name: "Reflector",
-      type: "Reflector",
-      length: reflectorFactor * lambda * scale,
-      pos: reflPos
-    });
-  }
+  elements.sort((a,b) => a.pos - b.pos);
 
-  // Update element table
-  const tbody = elementTable.querySelector("tbody");
+  // --- Element table ---
+  const tbody = document.querySelector("#elementTable tbody");
   tbody.innerHTML = "";
   let totalWire = 0;
+
   elements.forEach(el => {
     totalWire += el.length;
     const tr = document.createElement("tr");
@@ -608,34 +621,49 @@ function updateAll() {
   });
 
   const boomLength = elements[elements.length - 1].pos - elements[0].pos;
-  boomLengthLabel.textContent = boomLength.toFixed(3);
-  totalWireLabel.textContent = totalWire.toFixed(3);
+  document.getElementById("boomLengthLabel").textContent = boomLength.toFixed(3);
+  document.getElementById("totalWireLabel").textContent = totalWire.toFixed(3);
+
+  // --- Config summary ---
+  const configText = document.getElementById("configText");
+  configText.textContent =
+    `${reflOn ? "Reflector" : "No reflector"} · ${nDir} director(s) · Ground-mounted radial system`;
+
+  // --- DX warnings ---
+  dxWarning.style.display = dx ? "block" : "none";
+
+  // --- Radial warnings ---
+  const radialCount = parseInt(radialCountEl.value);
+  const radialFactor = parseFloat(radialLengthFactorEl.value);
+
+  if (dx && (radialCount < 16 || radialFactor < 0.40)) {
+    radialWarning.style.display = "block";
+  } else {
+    radialWarning.style.display = "none";
+  }
 
   // ------------------------------------------------------------
-  // Impedance model (approximate)
+  // Impedance model
   // ------------------------------------------------------------
-  let Rrad = 36; // baseline for 1/4-wave vertical
-  if (dx) Rrad *= 1.8; // DX radiator increases radiation resistance
+  let Rrad = 36;
+  if (dx) Rrad *= 1.8;
 
-  const radials = parseInt(radialCount.value);
-  const radialFactor = parseFloat(radialLengthFactor.value);
-
-  let Rground = 20 / radials;
+  let Rground = 20 / radialCount;
   if (radialFactor >= 0.40) Rground *= 0.6;
+  if (elevatedRadials.checked) Rground *= 0.7;
 
   const Rtotal = Rrad + Rground;
-  const X = dx ? 25 : 5; // reactive component
+  const X = dx ? 25 : 5;
 
-  rradLabel.textContent = Rrad.toFixed(1);
-  rgroundLabel.textContent = Rground.toFixed(1);
-  rtotalLabel.textContent = Rtotal.toFixed(1);
+  document.getElementById("rradLabel").textContent = Rrad.toFixed(1);
+  document.getElementById("rgroundLabel").textContent = Rground.toFixed(1);
+  document.getElementById("rtotalLabel").textContent = Rtotal.toFixed(1);
+  document.getElementById("zLabel").textContent = `${Rtotal.toFixed(1)} + j${X.toFixed(1)}`;
 
   const Zmag = Math.sqrt(Rtotal*Rtotal + X*X);
-  zLabel.textContent = `${Rtotal.toFixed(1)} + j${X.toFixed(1)}`;
-
-  // SWR
-  const swr = (Zmag / 50 > 1) ? (Zmag / 50).toFixed(2) : (50 / Zmag).toFixed(2);
-  swrCenterLabel.textContent = swr;
+  let swr = Zmag / 50;
+  if (swr < 1) swr = 1 / swr;
+  document.getElementById("swrCenterLabel").textContent = swr.toFixed(2);
 
   if (Zmag < 30 || Zmag > 80) {
     matchWarning.style.display = "block";
@@ -645,21 +673,24 @@ function updateAll() {
     goodMatchNote.style.display = "block";
   }
 
-  // Bandwidth
+  // --- Bandwidth ---
   const bw2 = (fMHz * (Rrad / Rtotal) * 0.015) * 1000;
   const bw3 = bw2 * 1.5;
-  bw2Label.textContent = bw2.toFixed(0);
-  bw3Label.textContent = bw3.toFixed(0);
+  document.getElementById("bw2Label").textContent = bw2.toFixed(0);
+  document.getElementById("bw3Label").textContent = bw3.toFixed(0);
 
   // ------------------------------------------------------------
   // Gain model
   // ------------------------------------------------------------
   let gain = 2.1 + nDir * 1.2;
-  if (reflectorOn) gain += 1.0;
+  if (reflOn) gain += 1.0;
   if (dx) gain += 2.0;
   if (seaside) gain += 3.0;
 
-  gainLabel.textContent = gain.toFixed(1);
+  document.getElementById("gainLabel").textContent = gain.toFixed(1);
+
+  const boost = (dx ? 2.0 : 0) + (seaside ? 3.0 : 0);
+  document.getElementById("boostLabel").textContent = boost.toFixed(1);
 
   // ------------------------------------------------------------
   // TOA model
@@ -669,34 +700,38 @@ function updateAll() {
   if (seaside) toa -= 6;
   if (toa < 8) toa = 8;
 
-  toaLabel.textContent = toa.toFixed(1);
+  document.getElementById("toaLabel").textContent = toa.toFixed(1);
 
   // ------------------------------------------------------------
   // F/B ratio
   // ------------------------------------------------------------
   let fb = 8 + nDir * 4;
-  if (reflectorOn) fb += 6;
+  if (reflOn) fb += 6;
   if (dx) fb += 4;
-  fbLabel.textContent = fb.toFixed(1);
+
+  document.getElementById("fbLabel").textContent = fb.toFixed(1);
 
   // ------------------------------------------------------------
   // ERP
   // ------------------------------------------------------------
-  const Ptx = parseFloat(txPower.value);
-  const feedLoss = parseFloat(feedlineLoss.value);
+  const Ptx = parseFloat(txPowerEl.value);
+  const feedLoss = parseFloat(feedlineLossEl.value);
   const eff = (Rrad / Rtotal) * 100;
-  effLabel.textContent = eff.toFixed(1);
+
+  document.getElementById("effLabel").textContent = eff.toFixed(1);
 
   const Pfeed = Ptx * undb(-feedLoss);
   const Prad = Pfeed * (eff / 100);
   const ERP = Prad * undb(gain);
-  erpLabel.textContent = ERP.toFixed(1);
+
+  document.getElementById("erpLabel").textContent = ERP.toFixed(1);
 
   // ------------------------------------------------------------
-  // 2D Patterns
+  // 2D Azimuth plot
   // ------------------------------------------------------------
   const az = [];
   const azGain = [];
+
   for (let phi = 0; phi <= 360; phi += 5) {
     az.push(phi);
     azGain.push(gain - 0.5 * Math.abs(Math.sin(phi * Math.PI/180)));
@@ -714,8 +749,12 @@ function updateAll() {
     yaxis: {title: "Gain (dBi)"}
   });
 
+  // ------------------------------------------------------------
+  // 2D Elevation plot
+  // ------------------------------------------------------------
   const el = [];
   const elGain = [];
+
   for (let th = 0; th <= 90; th += 2) {
     const elevFactor = Math.cos((th - toa) * Math.PI/180);
     el.push(th);
@@ -735,16 +774,19 @@ function updateAll() {
   });
 
   // ------------------------------------------------------------
-  // 3D Pattern (corrected θ/φ + ground reflection)
+  // 3D Pattern (correct θ/φ + ground reflection)
   // ------------------------------------------------------------
   const theta = [];
-  const phi = [];
+  const phiArr = [];
   const r = [];
 
   for (let th = 0; th <= 180; th += 5) {
     for (let ph = 0; ph <= 360; ph += 5) {
-      theta.push(th * Math.PI/180);
-      phi.push(ph * Math.PI/180);
+      const thRad = th * Math.PI/180;
+      const phRad = ph * Math.PI/180;
+
+      theta.push(thRad);
+      phiArr.push(phRad);
 
       const elev = Math.abs(th - toa);
       let g = gain * Math.max(0, Math.cos(elev * Math.PI/180));
@@ -756,8 +798,8 @@ function updateAll() {
     }
   }
 
-  const x = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.cos(phi[i]));
-  const y = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.sin(phi[i]));
+  const x = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.cos(phiArr[i]));
+  const y = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.sin(phiArr[i]));
   const z = r.map((rv, i) => rv * Math.cos(theta[i]));
 
   Plotly.newPlot("pattern3D", [{
@@ -780,23 +822,23 @@ function updateAll() {
   });
 
   // ------------------------------------------------------------
-  // Diagrams (placeholders)
+  // Placeholder diagrams
   // ------------------------------------------------------------
-  boomDiagram.textContent = "Boom spacing diagram (JS will render)";
-  radialDiagram.textContent = "Radial layout diagram (JS will render)";
-  currentDiagram.textContent = "Current distribution diagram (JS will render)";
+  document.getElementById("boomDiagram").textContent = "Boom spacing diagram (placeholder)";
+  document.getElementById("radialDiagram").textContent = "Radial layout diagram (placeholder)";
+  document.getElementById("currentDiagram").textContent = "Current distribution diagram (placeholder)";
 }
 
 // ------------------------------------------------------------
-// Event listeners
+// Initialize after DOM is ready
 // ------------------------------------------------------------
-document.querySelectorAll("input, select").forEach(el => {
-  el.addEventListener("input", updateAll);
-  el.addEventListener("change", updateAll);
+window.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("input, select").forEach(el => {
+    el.addEventListener("input", updateAll);
+    el.addEventListener("change", updateAll);
+  });
+  updateAll();
 });
-
-// Initial render
-updateAll();
 </script>
 </body>
 </html>
