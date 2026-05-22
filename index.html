@@ -222,7 +222,7 @@ function computeAzimuthPattern(lambda, hasRef, nDir) {
   return { angles, dBs };
 }
 
-// ---------- Elevation pattern (normalized dB) ----------
+// ---------- Elevation pattern (normalized dB, 0–90° above horizon) ----------
 function computeElevationPattern(lambda, hasRef, nDir) {
   let k = 2 * Math.PI / lambda;
   let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
@@ -230,15 +230,24 @@ function computeElevationPattern(lambda, hasRef, nDir) {
   let phi = 0;
   let angles = [], dBs = [], vals = [], maxVal = 0;
 
-  // Include horizon (90°) explicitly; avoid theta=0° singularity
-  for (let deg = 1; deg <= 90; deg++) {
-    let theta = deg * Math.PI / 180;
+  // Elevation angle measured from horizon: 0° (horizon) to 90° (zenith)
+  // Convert to theta (from +Z): theta = 90° - elev
+  for (let elev = 0; elev <= 90; elev++) {
+    let theta = (90 - elev) * Math.PI / 180;
     let ef = verticalElementFactor(theta);
-    let af = arrayFactor(theta, phi, k, positions, amps, phases);
+
+    let af;
+    // Single 1/4-wave vertical: pure monopole, AF = 1
+    if (!hasRef && nDir === 0) {
+      af = 1.0;
+    } else {
+      af = arrayFactor(theta, phi, k, positions, amps, phases);
+    }
+
     let field = af * ef;
     vals.push(field);
     if (field > maxVal) maxVal = field;
-    angles.push(deg);
+    angles.push(elev);
   }
 
   for (let v of vals) {
@@ -325,7 +334,14 @@ function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi) {
     let ef = verticalElementFactor(theta);
     for (let j = 0; j < phiSteps; j++) {
       let phi = phiVals[j];
-      let af = arrayFactor(theta, phi, k, positions, amps, phases);
+
+      let af;
+      if (!hasRef && nDir === 0) {
+        af = 1.0;
+      } else {
+        af = arrayFactor(theta, phi, k, positions, amps, phases);
+      }
+
       let field = af * ef;
       fieldGrid[i][j] = field;
       if (field > maxField) maxField = field;
@@ -394,26 +410,42 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi) {
     }
   });
 
-  // Elevation (absolute dBi)
+  // Elevation (absolute dBi, 0–90° above horizon)
   let elAbs = el.dBs.map(d => d + forwardAbs_dBi);
   let minEl = forwardAbs_dBi - 30;
   let maxEl = forwardAbs_dBi;
 
-  Plotly.newPlot("elevationPlot", [{
-    x: el.angles,
-    y: elAbs,
-    mode: "lines",
-    line: { color: "red", width: 3 }
-  }, {
-    x: [90, 90],
-    y: [minEl, maxEl],
-    mode: "lines",
-    line: { color: "gray", width: 1, dash: "dot" },
-    showlegend: false
-  }], {
-    title: "Elevation Pattern (Vertical, Absolute Gain)",
-    xaxis: { title: "Elevation Angle (degrees)", range: [0, 90] },
-    yaxis: { title: "Gain (dBi)", range: [minEl, maxEl], dtick: 5 }
+  // Find maximum takeoff angle (TOA)
+  let maxVal = -Infinity;
+  let maxIdx = 0;
+  for (let i = 0; i < elAbs.length; i++) {
+    if (elAbs[i] > maxVal) {
+      maxVal = elAbs[i];
+      maxIdx = i;
+    }
+  }
+  let toaAngle = el.angles[maxIdx]; // degrees above horizon
+
+  Plotly.newPlot("elevationPlot", [
+    {
+      x: el.angles,
+      y: elAbs,
+      mode: "lines",
+      line: { color: "red", width: 3 },
+      name: "Elevation Gain"
+    },
+    {
+      x: [toaAngle, toaAngle],
+      y: [minEl, maxEl],
+      mode: "lines",
+      line: { color: "green", width: 2, dash: "dot" },
+      name: `Max TOA ≈ ${toaAngle.toFixed(1)}°`
+    }
+  ], {
+    title: "Elevation Pattern (0–90° above horizon, Absolute Gain)",
+    xaxis: { title: "Elevation Angle above Horizon (degrees)", range: [0, 90] },
+    yaxis: { title: "Gain (dBi)", range: [minEl, maxEl], dtick: 5 },
+    showlegend: true
   });
 
   // Gain tables
