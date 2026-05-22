@@ -161,12 +161,11 @@ function buildArrayModel(hasRef, nDir, lambda) {
   return { positions, amps, phases };
 }
 
-// ---------- Element factor (vertical monopole) ----------
-function verticalElementFactor(theta) {
-  let st = Math.sin(theta);
-  if (st < 1e-6) st = 1e-6;
-  let ct = Math.cos(theta);
-  return Math.abs(Math.cos((Math.PI / 2) * ct) / st);
+// ---------- Simple elevation element factor ----------
+// Elevation angle = angle above horizon (0–90°)
+// Use a simple cos(elev) model: max at horizon, null overhead.
+function elevationElementFactor(elevRad) {
+  return Math.abs(Math.cos(elevRad));
 }
 
 // ---------- Array factor ----------
@@ -198,8 +197,9 @@ function computeAzimuthPattern(lambda, hasRef, nDir) {
   let k = 2 * Math.PI / lambda;
   let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
 
-  let theta = Math.PI / 2;
-  let ef = verticalElementFactor(theta);
+  // Azimuth at horizon: elevation = 0°, so theta = 90°
+  let theta = 90 * Math.PI / 180;
+  let ef = elevationElementFactor(0); // elev = 0 rad
 
   let vals = [];
   let maxVal = 0;
@@ -222,7 +222,7 @@ function computeAzimuthPattern(lambda, hasRef, nDir) {
   return { angles, dBs };
 }
 
-// ---------- Elevation pattern (normalized dB, 0–90° above horizon) ----------
+// ---------- Elevation pattern (0–90° above horizon) ----------
 function computeElevationPattern(lambda, hasRef, nDir) {
   let k = 2 * Math.PI / lambda;
   let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
@@ -233,13 +233,14 @@ function computeElevationPattern(lambda, hasRef, nDir) {
   // Elevation angle measured from horizon: 0° (horizon) to 90° (zenith)
   // Convert to theta (from +Z): theta = 90° - elev
   for (let elev = 0; elev <= 90; elev++) {
+    let elevRad = elev * Math.PI / 180;
     let theta = (90 - elev) * Math.PI / 180;
-    let ef = verticalElementFactor(theta);
+
+    let ef = elevationElementFactor(elevRad);
 
     let af;
-    // Single 1/4-wave vertical: pure monopole, AF = 1
     if (!hasRef && nDir === 0) {
-      af = 1.0;
+      af = 1.0; // single vertical
     } else {
       af = arrayFactor(theta, phi, k, positions, amps, phases);
     }
@@ -331,7 +332,8 @@ function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi) {
   for (let i = 0; i < thetaSteps; i++) {
     fieldGrid[i] = new Array(phiSteps);
     let theta = thetaVals[i];
-    let ef = verticalElementFactor(theta);
+    let elev = (90 - (theta * 180 / Math.PI)) * Math.PI / 180; // rad above horizon
+    let ef = elevationElementFactor(elev);
     for (let j = 0; j < phiSteps; j++) {
       let phi = phiVals[j];
 
