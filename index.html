@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Passive Vertical Design Calculator — KG5IEF</title>
+<title>Passive Vertical Design Calculator — KG5IEF (3D)</title>
 
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; }
@@ -33,11 +33,11 @@
   #plotsContainer {
     margin-top: 25px;
   }
-  #azimuthPlot, #elevationPlot {
+  #azimuthPlot, #elevationPlot, #pattern3D {
     width: 100%;
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto 30px auto;
-    height: 400px;
+    height: 450px;
   }
   #gainSummary table, #gainDetails table {
     width: 100%;
@@ -63,7 +63,7 @@
 </head>
 <body>
 
-<h1>KG5IEF — Passive Vertical / Vertical Yagi Calculator</h1>
+<h1>KG5IEF — Passive Vertical / Vertical Yagi Calculator (with 3D Pattern)</h1>
 
 <label>Frequency (MHz): </label>
 <input type="number" id="freq" value="146.000" step="0.001">
@@ -92,6 +92,7 @@
 
 <div id="plotsContainer">
   <h2>Radiation Patterns</h2>
+
   <div id="azimuthPlot"></div>
 
   <div id="gainSummary"></div>
@@ -99,6 +100,9 @@
   <div id="gainDetails" style="display:none;"></div>
 
   <div id="elevationPlot"></div>
+
+  <h2>3D Radiation Pattern (Absolute Gain, dBi)</h2>
+  <div id="pattern3D"></div>
 </div>
 
 <div id="build" class="build-block"></div>
@@ -106,7 +110,7 @@
 <button class="download-btn" onclick="downloadFile()">Download Results</button>
 
 <script>
-// meters → feet + fractional inches (1/16")
+// ---------- Utility: meters → feet/inches ----------
 function toFeetInches(m) {
   let totalInches = m * 39.3701;
   let feet = Math.floor(totalInches / 12);
@@ -116,7 +120,7 @@ function toFeetInches(m) {
   return `${feet} ft ${Math.floor(inches)} ${frac}/16 in`;
 }
 
-// Base gain in dBi
+// ---------- Base forward gain (dBi) ----------
 function baseGain(nDir, hasRef) {
   if (!hasRef && nDir === 0) return 2.1;
   if (hasRef && nDir === 0) return 5.0;
@@ -129,7 +133,7 @@ function baseGain(nDir, hasRef) {
   return 2.1;
 }
 
-// Build array model
+// ---------- Array model ----------
 function buildArrayModel(hasRef, nDir, lambda) {
   let positions = [];
   let amps = [];
@@ -157,7 +161,7 @@ function buildArrayModel(hasRef, nDir, lambda) {
   return { positions, amps, phases };
 }
 
-// Vertical monopole element factor
+// ---------- Element factor (vertical monopole) ----------
 function verticalElementFactor(theta) {
   let st = Math.sin(theta);
   if (st < 1e-6) st = 1e-6;
@@ -165,7 +169,7 @@ function verticalElementFactor(theta) {
   return Math.abs(Math.cos((Math.PI / 2) * ct) / st);
 }
 
-// Array factor
+// ---------- Array factor ----------
 function arrayFactor(theta, phi, k, positions, amps, phases) {
   let re = 0, im = 0;
   let sx = Math.sin(theta) * Math.cos(phi);
@@ -177,16 +181,15 @@ function arrayFactor(theta, phi, k, positions, amps, phases) {
   return Math.sqrt(re*re + im*im);
 }
 
-// Azimuth pattern
+// ---------- Azimuth pattern (normalized dB) ----------
 function computeAzimuthPattern(lambda, hasRef, nDir) {
   let angles = [];
   let dBs = [];
 
-  // Single 1/4-wave vertical: omnidirectional in azimuth
   if (!hasRef && nDir === 0) {
     for (let deg = 0; deg < 360; deg += 2) {
       angles.push(deg);
-      dBs.push(0); // 0 dB everywhere (normalized)
+      dBs.push(0);
     }
     return { angles, dBs };
   }
@@ -218,7 +221,7 @@ function computeAzimuthPattern(lambda, hasRef, nDir) {
   return { angles, dBs };
 }
 
-// Elevation pattern
+// ---------- Elevation pattern (normalized dB) ----------
 function computeElevationPattern(lambda, hasRef, nDir) {
   let k = 2 * Math.PI / lambda;
   let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
@@ -245,35 +248,29 @@ function computeElevationPattern(lambda, hasRef, nDir) {
   return { angles, dBs };
 }
 
-// Analyze azimuth pattern for gain metrics
+// ---------- Azimuth gain analysis ----------
 function analyzeAzimuth(az, forwardAbs_dBi) {
   let angles = az.angles;
   let dBs = az.dBs;
 
-  // Forward = 0°
   let fIdx = angles.indexOf(0);
   if (fIdx === -1) fIdx = 0;
-  let fRel = dBs[fIdx]; // should be 0 dB (normalized)
   let fAbs_dBi = forwardAbs_dBi;
   let fAbs_dBd = fAbs_dBi - 2.15;
 
-  // Back = 180°
   let bIdx = angles.indexOf(180);
   let bRel = (bIdx !== -1) ? dBs[bIdx] : Math.min(...dBs);
   let bAbs_dBi = fAbs_dBi + bRel;
-  let fbRatio = fAbs_dBi - bAbs_dBi; // dB
+  let fbRatio = fAbs_dBi - bAbs_dBi;
 
-  // -3 dB beamwidth
   let thr3 = -3;
   let valid3 = angles.filter((a, i) => dBs[i] >= thr3);
   let bw3 = valid3.length ? (Math.max(...valid3) - Math.min(...valid3)) : 360;
 
-  // -10 dB beamwidth
   let thr10 = -10;
   let valid10 = angles.filter((a, i) => dBs[i] >= thr10);
   let bw10 = valid10.length ? (Math.max(...valid10) - Math.min(...valid10)) : 360;
 
-  // Side-lobe level: max outside main lobe region (approx)
   let mainMin = valid3.length ? Math.min(...valid3) : 0;
   let mainMax = valid3.length ? Math.max(...valid3) : 0;
   let sideRel = -30;
@@ -286,7 +283,6 @@ function analyzeAzimuth(az, forwardAbs_dBi) {
   let sideAbs_dBi = fAbs_dBi + sideRel;
   let fsRatio = fAbs_dBi - sideAbs_dBi;
 
-  // Pattern efficiency (rough): average linear gain
   let sumLin = 0;
   for (let d of dBs) sumLin += Math.pow(10, d / 10);
   let avgLin = sumLin / dBs.length;
@@ -305,12 +301,81 @@ function analyzeAzimuth(az, forwardAbs_dBi) {
   };
 }
 
-// Plot updater + gain tables
+// ---------- 3D pattern (absolute dBi) ----------
+function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi) {
+  let k = 2 * Math.PI / lambda;
+  let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
+
+  let thetaSteps = 181; // 0..180
+  let phiSteps = 361;   // 0..360
+
+  let thetaVals = [];
+  let phiVals = [];
+  for (let i = 0; i < thetaSteps; i++) thetaVals.push(i * Math.PI / 180);
+  for (let j = 0; j < phiSteps; j++) phiVals.push(j * Math.PI / 180);
+
+  let maxField = 0;
+  let fieldGrid = new Array(thetaSteps);
+  for (let i = 0; i < thetaSteps; i++) {
+    fieldGrid[i] = new Array(phiSteps);
+    let theta = thetaVals[i];
+    let ef = verticalElementFactor(theta);
+    for (let j = 0; j < phiSteps; j++) {
+      let phi = phiVals[j];
+      let af = arrayFactor(theta, phi, k, positions, amps, phases);
+      let field = af * ef;
+      fieldGrid[i][j] = field;
+      if (field > maxField) maxField = field;
+    }
+  }
+
+  if (maxField <= 0) maxField = 1;
+
+  let x = [], y = [], z = [], gain = [];
+  let maxAbs = -Infinity, minAbs = Infinity;
+
+  for (let i = 0; i < thetaSteps; i++) {
+    let theta = thetaVals[i];
+    let xRow = [], yRow = [], zRow = [], gRow = [];
+    for (let j = 0; j < phiSteps; j++) {
+      let phi = phiVals[j];
+      let rel = fieldGrid[i][j] / maxField;
+      let rel_dB = 20 * Math.log10(rel);
+      if (!isFinite(rel_dB)) rel_dB = -60;
+      let abs_dBi = forwardAbs_dBi + rel_dB;
+
+      let r = Math.max(0, abs_dBi - (forwardAbs_dBi - 30)); // keep radius positive-ish
+      let st = Math.sin(theta);
+      let ct = Math.cos(theta);
+      let sp = Math.sin(phi);
+      let cp = Math.cos(phi);
+
+      let xx = r * st * cp;
+      let yy = r * st * sp;
+      let zz = r * ct;
+
+      xRow.push(xx);
+      yRow.push(yy);
+      zRow.push(zz);
+      gRow.push(abs_dBi);
+
+      if (abs_dBi > maxAbs) maxAbs = abs_dBi;
+      if (abs_dBi < minAbs) minAbs = abs_dBi;
+    }
+    x.push(xRow);
+    y.push(yRow);
+    z.push(zRow);
+    gain.push(gRow);
+  }
+
+  return { x, y, z, gain, minAbs, maxAbs };
+}
+
+// ---------- Plot updater ----------
 function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi) {
   let az = computeAzimuthPattern(lambda, hasRef, nDir);
   let el = computeElevationPattern(lambda, hasRef, nDir);
 
-  // Azimuth polar plot
   Plotly.newPlot("azimuthPlot", [{
     type: "scatterpolar",
     r: az.dBs,
@@ -325,7 +390,6 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi) {
     }
   });
 
-  // Elevation Cartesian plot
   Plotly.newPlot("elevationPlot", [{
     x: el.angles,
     y: el.dBs,
@@ -337,10 +401,8 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi) {
     yaxis: { title: "Relative Gain (dB)", range: [-30, 0], dtick: 5 }
   });
 
-  // Gain analysis
   let g = analyzeAzimuth(az, forwardAbs_dBi);
 
-  // Simple gain table
   document.getElementById("gainSummary").innerHTML = `
     <h3>Gain Summary</h3>
     <table>
@@ -359,7 +421,6 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi) {
     </table>
   `;
 
-  // Advanced gain table
   document.getElementById("gainDetails").innerHTML = `
     <h3>Advanced Gain Metrics</h3>
     <table>
@@ -385,9 +446,29 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi) {
       </tr>
     </table>
   `;
+
+  let p3d = compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi);
+
+  Plotly.newPlot("pattern3D", [{
+    type: "surface",
+    x: p3d.x,
+    y: p3d.y,
+    z: p3d.z,
+    surfacecolor: p3d.gain,
+    colorscale: "Jet",
+    colorbar: { title: "Gain (dBi)" }
+  }], {
+    title: "3D Radiation Pattern (Absolute Gain, dBi)",
+    scene: {
+      xaxis: { title: "X" },
+      yaxis: { title: "Y" },
+      zaxis: { title: "Z" },
+      aspectmode: "data"
+    }
+  });
 }
 
-// Main calculator
+// ---------- Main calculator ----------
 function calculate() {
   let fMHz = parseFloat(document.getElementById("freq").value);
   let nDir = parseInt(document.getElementById("directors").value);
@@ -431,7 +512,6 @@ function calculate() {
     Radial Length: ${radialLen.toFixed(3)} m = ${toFeetInches(radialLen)}
   `;
 
-  // Build element table
   let html = `<table>
     <tr>
       <th>Element</th><th>Length (m)</th><th>Length (ft/in)</th>
@@ -477,10 +557,8 @@ function calculate() {
   html += `</table>`;
   document.getElementById("tableContainer").innerHTML = html;
 
-  // Update plots + gain tables
   updatePlots(lambda, hasRef, nDir, finalGain_dBi);
 
-  // Build instructions
   document.getElementById("build").innerHTML = `
     <b>How to Build This Antenna</b><br><br>
     • Each element needs its own ¼‑wave radial system.<br>
@@ -495,23 +573,22 @@ function calculate() {
   `;
 }
 
-// Download text file (summary only)
+// ---------- Download summary ----------
 function downloadFile() {
   let text = document.getElementById("summary").innerText;
   let blob = new Blob([text], {type: "text/plain"});
   let link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "Passive_Vertical_Design_Calculator.txt";
+  link.download = "Passive_Vertical_Design_Calculator_3D.txt";
   link.click();
 }
 
-// Live updates
+// ---------- Event wiring ----------
 document.getElementById("freq").addEventListener("input", calculate);
 document.getElementById("directors").addEventListener("change", calculate);
 document.getElementById("useReflector").addEventListener("change", calculate);
 document.getElementById("elevatedRadials").addEventListener("change", calculate);
 
-// Toggle advanced gain metrics
 document.getElementById("toggleGainDetails").addEventListener("click", function(e) {
   e.preventDefault();
   let d = document.getElementById("gainDetails");
@@ -524,7 +601,7 @@ document.getElementById("toggleGainDetails").addEventListener("click", function(
   }
 });
 
-// Auto-generate plots on page load
+// ---------- Auto-run on load ----------
 window.addEventListener("load", calculate);
 </script>
 
