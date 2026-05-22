@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Passive Vertical Design Calculator — KG5IEF</title>
+
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; }
   h1 { font-size: 28px; margin-bottom: 10px; }
@@ -39,6 +40,7 @@
     height: 400px;
   }
 </style>
+
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
@@ -92,39 +94,28 @@ function toFeetInches(m) {
 }
 
 // Gain Reference Notes:
-// dBi = gain referenced to an isotropic radiator (perfect point source).
+// dBi = gain referenced to an isotropic radiator.
 // dBd = gain referenced to a half-wave dipole.
-// A half-wave dipole has +2.15 dBi by definition.
-// Therefore: dBd = dBi - 2.15
-//
-// A 1/4-wave vertical over a good radial system is ~ +2.1 dBi,
-// which is approximately -0.05 dBd (often rounded to -0.5 to -1.0 dBd in practice).
-// Both values are correct depending on the reference (dBi vs dBd).
+// A dipole has +2.15 dBi → dBd = dBi - 2.15.
+// A 1/4-wave vertical ≈ +2.1 dBi ≈ -0.05 to -1.0 dBd.
 
 function baseGain(nDir, hasRef) {
-  // All gains here are in dBi
-  if (!hasRef && nDir === 0) return 2.1;  // single 1/4-wave vertical over good radials
-  if (hasRef && nDir === 0) return 5.0;   // driven + reflector
-  if (hasRef && nDir === 1) return 6.0;   // +1 director
-  if (hasRef && nDir === 2) return 6.7;   // +2 directors
-  if (hasRef && nDir === 3) return 7.0;   // +3 directors
-  // No reflector but directors (less common, modest gain)
+  if (!hasRef && nDir === 0) return 2.1;
+  if (hasRef && nDir === 0) return 5.0;
+  if (hasRef && nDir === 1) return 6.0;
+  if (hasRef && nDir === 2) return 6.7;
+  if (hasRef && nDir === 3) return 7.0;
   if (!hasRef && nDir === 1) return 4.0;
   if (!hasRef && nDir === 2) return 4.8;
   if (!hasRef && nDir === 3) return 5.2;
   return 2.1;
 }
 
-// Simple hybrid array model:
-// Elements along x-axis, vertical monopoles.
-// We approximate induced currents:
-// - Driven: 1∠0°
-// - Reflector: 0.9∠-140°
-// - Directors: 0.8∠+60°
+// Build array model
 function buildArrayModel(hasRef, nDir, lambda) {
   let positions = [];
   let amps = [];
-  let phases = []; // radians
+  let phases = [];
 
   let refSpacing = 0.15 * lambda;
   let dirSpacing = 0.10 * lambda;
@@ -135,7 +126,6 @@ function buildArrayModel(hasRef, nDir, lambda) {
     phases.push(-140 * Math.PI / 180);
   }
 
-  // Driven at 0
   positions.push(0.0);
   amps.push(1.0);
   phases.push(0.0);
@@ -149,160 +139,113 @@ function buildArrayModel(hasRef, nDir, lambda) {
   return { positions, amps, phases };
 }
 
-// Vertical monopole element factor over perfect ground (approx)
+// Vertical monopole element factor
 function verticalElementFactor(theta) {
-  // theta from 0 (zenith) to pi/2 (horizon)
   let st = Math.sin(theta);
-  if (st < 1e-6) return 0;
+  if (st < 1e-6) st = 1e-6;
   let ct = Math.cos(theta);
-  let val = Math.cos((Math.PI / 2) * ct) / st;
-  return Math.abs(val);
+  return Math.abs(Math.cos((Math.PI / 2) * ct) / st);
 }
 
-// Array factor for elements along x-axis
+// Array factor
 function arrayFactor(theta, phi, k, positions, amps, phases) {
-  let re = 0;
-  let im = 0;
+  let re = 0, im = 0;
   let sx = Math.sin(theta) * Math.cos(phi);
   for (let i = 0; i < positions.length; i++) {
     let phase = phases[i] + k * positions[i] * sx;
     re += amps[i] * Math.cos(phase);
     im += amps[i] * Math.sin(phase);
   }
-  return Math.sqrt(re * re + im * im);
+  return Math.sqrt(re*re + im*im);
 }
 
-// Compute azimuth (horizontal) pattern at the horizon (theta = 90°)
+// Azimuth pattern
 function computeAzimuthPattern(lambda, hasRef, nDir) {
   let k = 2 * Math.PI / lambda;
-  let model = buildArrayModel(hasRef, nDir, lambda);
-  let positions = model.positions;
-  let amps = model.amps;
-  let phases = model.phases;
+  let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
 
-  let theta = Math.PI / 2; // horizon
-  let elementFactor = verticalElementFactor(theta);
+  let theta = Math.PI / 2;
+  let ef = verticalElementFactor(theta);
 
-  let anglesDeg = [];
-  let gainsdB = [];
-  let maxVal = 0;
-  let vals = [];
+  let angles = [], dBs = [], vals = [], maxVal = 0;
 
   for (let deg = 0; deg < 360; deg += 2) {
     let phi = deg * Math.PI / 180;
-    let af = arrayFactor(theta, phi, k, positions, amps, phases);
-    let field = af * elementFactor;
+    let field = arrayFactor(theta, phi, k, positions, amps, phases) * ef;
     vals.push(field);
     if (field > maxVal) maxVal = field;
-    anglesDeg.push(deg);
+    angles.push(deg);
   }
 
-  for (let i = 0; i < vals.length; i++) {
-    let norm = vals[i] / (maxVal || 1);
-    let dB = 20 * Math.log10(norm);
-    if (!isFinite(dB)) dB = -60;
-    if (dB < -30) dB = -30;
-    gainsdB.push(dB);
+  for (let v of vals) {
+    let d = 20 * Math.log10(v / (maxVal || 1));
+    if (!isFinite(d)) d = -60;
+    if (d < -30) d = -30;
+    dBs.push(d);
   }
 
-  return { anglesDeg, gainsdB };
+  return { angles, dBs };
 }
 
-// Compute elevation (vertical) pattern in boom plane (phi = 0)
+// Elevation pattern
 function computeElevationPattern(lambda, hasRef, nDir) {
   let k = 2 * Math.PI / lambda;
-  let model = buildArrayModel(hasRef, nDir, lambda);
-  let positions = model.positions;
-  let amps = model.amps;
-  let phases = model.phases;
+  let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
 
-  let phi = 0; // boom plane
-  let anglesDeg = [];
-  let gainsdB = [];
-  let maxVal = 0;
-  let vals = [];
+  let phi = 0;
+  let angles = [], dBs = [], vals = [], maxVal = 0;
 
-  // 1° to 89° elevation (theta from near zenith to near horizon)
-  for (let deg = 1; deg <= 89; deg += 1) {
+  for (let deg = 1; deg <= 89; deg++) {
     let theta = deg * Math.PI / 180;
     let ef = verticalElementFactor(theta);
-    let af = arrayFactor(theta, phi, k, positions, amps, phases);
-    let field = af * ef;
+    let field = arrayFactor(theta, phi, k, positions, amps, phases) * ef;
     vals.push(field);
     if (field > maxVal) maxVal = field;
-    anglesDeg.push(deg);
+    angles.push(deg);
   }
 
-  for (let i = 0; i < vals.length; i++) {
-    let norm = vals[i] / (maxVal || 1);
-    let dB = 20 * Math.log10(norm);
-    if (!isFinite(dB)) dB = -60;
-    if (dB < -30) dB = -30;
-    gainsdB.push(dB);
+  for (let v of vals) {
+    let d = 20 * Math.log10(v / (maxVal || 1));
+    if (!isFinite(d)) d = -60;
+    if (d < -30) d = -30;
+    dBs.push(d);
   }
 
-  return { anglesDeg, gainsdB };
+  return { angles, dBs };
 }
 
+// Plot updater
 function updatePlots(lambda, hasRef, nDir) {
   let az = computeAzimuthPattern(lambda, hasRef, nDir);
   let el = computeElevationPattern(lambda, hasRef, nDir);
 
-  // Azimuth polar plot (dB, 0 to -30)
-  let azTrace = {
-    type: 'scatterpolar',
-    r: az.gainsdB,
-    theta: az.anglesDeg,
-    mode: 'lines',
-    name: 'Azimuth Pattern',
-    line: { color: 'blue' }
-  };
-
-  let azLayout = {
-    title: 'Azimuth Pattern (Horizontal, dBi-normalized)',
+  Plotly.newPlot("azimuthPlot", [{
+    type: "scatterpolar",
+    r: az.dBs,
+    theta: az.angles,
+    mode: "lines",
+    line: { color: "blue" }
+  }], {
+    title: "Azimuth Pattern (Horizontal, dBi-normalized)",
     polar: {
-      radialaxis: {
-        range: [-30, 0],
-        dtick: 5,
-        angle: 90,
-        tickfont: { size: 10 }
-      },
-      angularaxis: {
-        direction: 'counterclockwise',
-        rotation: 0
-      }
-    },
-    margin: { t: 40, b: 20, l: 40, r: 40 }
-  };
+      radialaxis: { range: [-30, 0], dtick: 5, angle: 90 },
+      angularaxis: { direction: "counterclockwise" }
+    }
+  });
 
-  Plotly.newPlot('azimuthPlot', [azTrace], azLayout, {displaylogo: false});
-
-  // Elevation Cartesian plot
-  let elTrace = {
-    x: el.anglesDeg,
-    y: el.gainsdB,
-    mode: 'lines',
-    name: 'Elevation Pattern',
-    line: { color: 'red' }
-  };
-
-  let elLayout = {
-    title: 'Elevation Pattern (Vertical, dBi-normalized)',
-    xaxis: {
-      title: 'Elevation Angle (degrees)',
-      range: [0, 90]
-    },
-    yaxis: {
-      title: 'Relative Gain (dB)',
-      range: [-30, 0],
-      dtick: 5
-    },
-    margin: { t: 40, b: 50, l: 60, r: 20 }
-  };
-
-  Plotly.newPlot('elevationPlot', [elTrace], elLayout, {displaylogo: false});
+  Plotly.newPlot("elevationPlot", [{
+    x: el.angles,
+    y: el.dBs,
+    mode: "lines",
+    line: { color: "red" }
+  }], {
+    title: "Elevation Pattern (Vertical, dBi-normalized)",
+    xaxis: { title: "Elevation Angle (degrees)", range: [0, 90] },
+    yaxis: { title: "Relative Gain (dB)", range: [-30, 0], dtick: 5 }
+  });
 }
 
+// Main calculator
 function calculate() {
   let fMHz = parseFloat(document.getElementById("freq").value);
   let nDir = parseInt(document.getElementById("directors").value);
@@ -313,14 +256,14 @@ function calculate() {
   let lambda = c / (fMHz * 1e6);
 
   let drivenLen = 0.48 * lambda;
-  let refLen    = 0.52 * lambda;
-  let dirLen    = 0.45 * lambda;
+  let refLen = 0.52 * lambda;
+  let dirLen = 0.45 * lambda;
 
   let refSpacing = 0.15 * lambda;
   let dirSpacing = 0.10 * lambda;
 
-  let radialLen  = 0.25 * lambda;
-  let radialHt   = 0.05 * lambda;
+  let radialLen = 0.25 * lambda;
+  let radialHt = 0.05 * lambda;
 
   let back = hasRef ? refSpacing : 0;
   let front = nDir * dirSpacing;
@@ -331,51 +274,38 @@ function calculate() {
   let finalGain_dBi = gain_dBi + effBoost;
   let finalGain_dBd = finalGain_dBi - 2.15;
 
-  let radialSystemText = elevated
-    ? `Elevated (0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)})`
-    : `Ground-mounted`;
-
-  let radialCountText = elevated ? `2–4 radials per element` : `4+ radials per element`;
-
   document.getElementById("gainLine").innerHTML =
-    `${finalGain_dBi.toFixed(1)} dBi (${finalGain_dBd.toFixed(1)} dBd) — vertical Yagi configuration at ${fMHz.toFixed(3)} MHz`;
+    `${finalGain_dBi.toFixed(1)} dBi (${finalGain_dBd.toFixed(1)} dBd) — vertical Yagi at ${fMHz.toFixed(3)} MHz`;
 
   document.getElementById("summary").innerHTML = `
     <b>Passive Vertical / Vertical Yagi Array</b><br>
     Frequency: ${fMHz.toFixed(3)} MHz<br>
     Wavelength: ${lambda.toFixed(3)} m = ${toFeetInches(lambda)}<br>
-    Driven Element Length: ${drivenLen.toFixed(3)} m = ${toFeetInches(drivenLen)}<br>
+    Driven Element: ${drivenLen.toFixed(3)} m = ${toFeetInches(drivenLen)}<br>
     Reflector: ${hasRef ? "Yes" : "No"}<br>
     Directors: ${nDir}<br>
-    Total Front-to-Back Span: ≈ ${totalSpan.toFixed(3)} m = ${toFeetInches(totalSpan)}<br>
-    Radial System: ${radialSystemText}<br>
-    Radial Length (¼ λ): ${radialLen.toFixed(3)} m = ${toFeetInches(radialLen)}<br>
-    Radials per Element: ${radialCountText}
+    Total Boom Length: ${totalSpan.toFixed(3)} m = ${toFeetInches(totalSpan)}<br>
+    Radial System: ${elevated ? "Elevated (0.05 λ)" : "Ground-mounted"}<br>
+    Radial Length: ${radialLen.toFixed(3)} m = ${toFeetInches(radialLen)}
   `;
 
+  // Build table
   let html = `<table>
     <tr>
-      <th>Element</th>
-      <th>Length (m)</th>
-      <th>Length (ft/in)</th>
-      <th>Position (m)</th>
-      <th>Position (ft/in)</th>
-      <th>Radial Length (m)</th>
-      <th>Radial Length (ft/in)</th>
-      <th>Radial Height</th>
+      <th>Element</th><th>Length (m)</th><th>Length (ft/in)</th>
+      <th>Position (m)</th><th>Position (ft/in)</th>
+      <th>Radial Length</th><th>Radial Height</th>
     </tr>`;
 
   if (hasRef) {
-    let pos = -refSpacing;
     html += `<tr>
       <td>Reflector</td>
       <td>${refLen.toFixed(3)}</td>
       <td>${toFeetInches(refLen)}</td>
-      <td>${pos.toFixed(3)}</td>
-      <td>${toFeetInches(pos)}</td>
-      <td>${radialLen.toFixed(3)}</td>
+      <td>${(-refSpacing).toFixed(3)}</td>
+      <td>${toFeetInches(-refSpacing)}</td>
       <td>${toFeetInches(radialLen)}</td>
-      <td>${elevated ? `0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)}` : "Ground-mounted"}</td>
+      <td>${elevated ? toFeetInches(radialHt) : "Ground"}</td>
     </tr>`;
   }
 
@@ -384,10 +314,9 @@ function calculate() {
     <td>${drivenLen.toFixed(3)}</td>
     <td>${toFeetInches(drivenLen)}</td>
     <td>0.000</td>
-    <td>0 ft 0 0/16 in</td>
-    <td>${radialLen.toFixed(3)}</td>
+    <td>0 ft 0 in</td>
     <td>${toFeetInches(radialLen)}</td>
-    <td>${elevated ? `0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)}` : "Ground-mounted"}</td>
+    <td>${elevated ? toFeetInches(radialHt) : "Ground"}</td>
   </tr>`;
 
   for (let i = 1; i <= nDir; i++) {
@@ -398,129 +327,36 @@ function calculate() {
       <td>${toFeetInches(dirLen)}</td>
       <td>${pos.toFixed(3)}</td>
       <td>${toFeetInches(pos)}</td>
-      <td>${radialLen.toFixed(3)}</td>
       <td>${toFeetInches(radialLen)}</td>
-      <td>${elevated ? `0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)}` : "Ground-mounted"}</td>
+      <td>${elevated ? toFeetInches(radialHt) : "Ground"}</td>
     </tr>`;
   }
 
   html += `</table>`;
   document.getElementById("tableContainer").innerHTML = html;
 
-  // Update radiation plots
+  // Update plots
   updatePlots(lambda, hasRef, nDir);
 
+  // Build instructions
   document.getElementById("build").innerHTML = `
     <b>How to Build This Antenna</b><br><br>
-
-    <b>1. Each element requires its own radial field</b><br>
-    Every vertical element — driven, reflector, and directors — must have its own ¼‑wave radial system.
-    Without radials, elements become lossy and detuned, and the array will not produce the modeled gain.<br><br>
-
-    <b>2. Elevated Radials</b><br>
-    When selected, radials are raised 0.05 λ above ground
-    (${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)}). Only 2–4 radials per element are needed.
-    Elevated radials reduce ground loss, improve efficiency, stabilize impedance, and increase gain by ~0.8 dB.<br><br>
-
-    <b>3. Choke Placement with Elevated Radials</b><br>
-    When radials are elevated, the feedpoint is elevated too. The 1:1 current choke must be mounted
-    <u>at the same height as the elevated radials</u>, attached to the mast at this height.
-    Route the coax straight down the mast for at least 0.25 λ before any bends to prevent the feedline
-    from becoming a radiator.<br><br>
-
-    <b>4. Only the driven element connects to the coax</b><br>
-    Reflector and directors are passive and isolated. They work by mutual coupling, like a horizontal Yagi.<br><br>
-
-    <b>5. A 1:1 current choke is strongly recommended</b><br>
-    Prevents coax radiation and pattern distortion. Use FT240‑31 ferrites or an air‑wound choke.<br><br>
-
-    <b>6. Alignment and spacing</b><br>
-    • All elements vertical and parallel<br>
-    • Reflector: 0.15 λ behind driven<br>
-    • Directors: 0.10 λ in front of driven or previous director<br><br>
-
-    <b>7. Mounting notes</b><br>
-    • Use non‑conductive supports<br>
-    • Keep metal 0.1 λ away<br>
-    • If using a mast, place it behind the reflector<br><br>
-
-    <b>8. Understanding dBi vs dBd</b><br>
-    • dBi = gain referenced to an isotropic radiator (theoretical point source).<br>
-    • dBd = gain referenced to a half‑wave dipole.<br>
-    • A dipole has +2.15 dBi, so: dBd = dBi - 2.15.<br>
-    • A single ¼‑wave vertical over a good radial system is about +2.1 dBi,
-      which is roughly -0.05 to -1.0 dBd in real-world conditions.<br>
+    • Each element needs its own ¼‑wave radial system.<br>
+    • Elevated radials (0.05 λ) improve efficiency by ~0.8 dB.<br>
+    • Use a 1:1 choke at the feedpoint.<br>
+    • Reflector spacing: 0.15 λ behind driven.<br>
+    • Director spacing: 0.10 λ in front of driven.<br>
+    • Keep metal at least 0.1 λ away.<br><br>
+    <b>dBi vs dBd</b><br>
+    • dBi = isotropic reference.<br>
+    • dBd = dipole reference.<br>
+    • dBd = dBi − 2.15.<br>
   `;
 }
 
+// Download text file
 function downloadFile() {
-  let fMHz = parseFloat(document.getElementById("freq").value);
-  let nDir = parseInt(document.getElementById("directors").value);
-  let hasRef = document.getElementById("useReflector").checked;
-  let elevated = document.getElementById("elevatedRadials").checked;
-
-  let c = 299792458;
-  let lambda = c / (fMHz * 1e6);
-  let radialLen  = 0.25 * lambda;
-  let radialHt   = 0.05 * lambda;
-
-  let gain_dBi = baseGain(nDir, hasRef);
-  let effBoost = elevated ? 0.8 : 0.0;
-  let finalGain_dBi = gain_dBi + effBoost;
-  let finalGain_dBd = finalGain_dBi - 2.15;
-
-  let radialSystemText = elevated
-    ? `Elevated (0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)})`
-    : `Ground-mounted`;
-
-  let radialCountText = elevated ? `2–4 radials per element` : `4+ radials per element`;
-
-  let summaryText = document.getElementById("summary").innerText;
-
-  let text =
-`Passive Vertical / Vertical Yagi Calculator — KG5IEF
-Generated: ${new Date().toLocaleString()}
--------------------------------------
-
-${summaryText}
-
--------------------------------------
-Build Summary
-Frequency: ${fMHz.toFixed(3)} MHz
-Wavelength: ${lambda.toFixed(3)} m = ${toFeetInches(lambda)}
-Reflector: ${hasRef ? "Yes" : "No"}
-Directors: ${nDir}
-Base Gain (dBi): ${gain_dBi.toFixed(1)} dBi
-Elevated Radials: ${elevated ? "Enabled" : "Disabled"}
-Efficiency Boost from Elevated Radials: ${effBoost.toFixed(1)} dB
-Estimated Forward Gain: ${finalGain_dBi.toFixed(1)} dBi (${finalGain_dBd.toFixed(1)} dBd)
-Radial System: ${radialSystemText}
-Radial Length (¼ λ): ${radialLen.toFixed(3)} m = ${toFeetInches(radialLen)}
-Radials per Element: ${radialCountText}
-
--------------------------------------
-Construction Notes
-• Each element (driven, reflector, directors) requires its own ¼‑wave radial field.
-• Elevated radials (if used): 0.05 λ above ground, 2–4 radials per element, ¼‑wave long.
-• Ground radials (if not elevated): 4+ radials per element, ¼‑wave long, evenly spaced.
-• Choke Placement with Elevated Radials:
-  - Mount the 1:1 current choke at the same height as the elevated radials (0.05 λ).
-  - Attach the choke to the mast at this height.
-  - Route coax straight down the mast for at least 0.25 λ.
-• Only the driven element connects to the coax; reflector and directors are passive.
-• Use a 1:1 current choke at the feedpoint to prevent feedline radiation.
-• Reflector spacing: 0.15 λ behind driven.
-• Director spacing: 0.10 λ in front of driven or previous director.
-• Use non‑conductive supports; keep metal 0.1 λ away from elements.
-
-Gain Reference Notes:
-• dBi = gain referenced to an isotropic radiator.
-• dBd = gain referenced to a half-wave dipole.
-• A dipole has +2.15 dBi, so: dBd = dBi - 2.15.
-• A 1/4-wave vertical is typically about +2.1 dBi (≈ -0.05 to -1.0 dBd in practice).
--------------------------------------
-`;
-
+  let text = document.getElementById("summary").innerText;
   let blob = new Blob([text], {type: "text/plain"});
   let link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -528,13 +364,15 @@ Gain Reference Notes:
   link.click();
 }
 
+// Live updates
 document.getElementById("freq").addEventListener("input", calculate);
 document.getElementById("directors").addEventListener("change", calculate);
 document.getElementById("useReflector").addEventListener("change", calculate);
 document.getElementById("elevatedRadials").addEventListener("change", calculate);
 
-calculate();
+// Auto-generate plots on page load
+window.addEventListener("load", calculate);
 </script>
+
 </body>
 </html>
-
