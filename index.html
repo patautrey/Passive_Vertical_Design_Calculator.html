@@ -2,144 +2,228 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Passive Vertical Design Calculator — KG5IEF (3D + TOA)</title>
+<title>KG5IEF Antenna Design Tool</title>
+
+<!-- Plotly explicit version (no "latest" alias) -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  h1 { font-size: 28px; margin-bottom: 10px; }
-  h2 { margin-top: 30px; }
-  .summary-block {
-    background: #f0f0f0;
-    padding: 15px;
-    border-radius: 8px;
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 0 0 30px 0;
+    background: #f7f9fc;
+    color: #222;
+  }
+  .header-banner {
+    background: linear-gradient(90deg, #0b63ce, #27a9ff);
+    color: #fff;
+    padding: 18px 20px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
     margin-bottom: 20px;
-    font-size: 18px;
+  }
+  .header-banner h1 {
+    margin: 0;
+    font-size: 28px;
+    letter-spacing: 0.03em;
+  }
+  .header-banner p {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  h2 {
+    margin-top: 26px;
+    margin-bottom: 10px;
+    font-size: 22px;
+  }
+  label {
+    font-size: 15px;
+  }
+  input[type="number"], select {
+    padding: 4px 6px;
+    font-size: 14px;
+    margin-left: 4px;
+  }
+  input[type="checkbox"] {
+    margin-right: 4px;
+  }
+  .control-row {
+    margin-bottom: 8px;
+  }
+  #gainLine {
+    margin-top: 18px;
+    font-size: 20px;
+  }
+  .summary-block {
+    background: #f0f0f5;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    font-size: 15px;
   }
   .toa-card {
     background: #e0f3ff;
     border-left: 5px solid #0094ff;
-    padding: 15px;
-    margin: 20px auto;
+    padding: 14px 16px;
+    margin: 18px auto 10px auto;
     max-width: 600px;
     border-radius: 6px;
-    font-size: 18px;
+    font-size: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
   .toa-card b {
-    font-size: 20px;
+    font-size: 18px;
   }
   .build-block {
     background: #e8f4ff;
-    padding: 15px;
+    padding: 14px 16px;
     border-radius: 8px;
-    margin-top: 25px;
-    font-size: 17px;
+    margin-top: 24px;
+    font-size: 15px;
   }
-  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-  table, th, td { border: 1px solid #999; }
-  th, td { padding: 8px; text-align: center; }
-  .download-btn {
-    margin-top: 20px;
-    padding: 10px 20px;
-    font-size: 16px;
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  table, th, td {
+    border: 1px solid #999;
+  }
+  th, td {
+    padding: 6px;
+    text-align: center;
   }
   #plotsContainer {
-    margin-top: 25px;
+    margin-top: 22px;
   }
   #azimuthPlot, #elevationPlot, #pattern3D {
     width: 100%;
     max-width: 900px;
     margin: 0 auto 10px auto;
-    height: 450px;
+    height: 430px;
   }
   .freq-label {
     text-align: center;
-    font-size: 16px;
-    margin-bottom: 25px;
+    font-size: 14px;
+    margin-bottom: 20px;
     color: #444;
   }
   #gainSummary table, #gainDetails table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
+    margin-top: 8px;
   }
   #gainSummary th, #gainSummary td,
   #gainDetails th, #gainDetails td {
     border: 1px solid #999;
-    padding: 6px;
+    padding: 5px;
     text-align: center;
   }
   #toggleGainDetails {
     display: inline-block;
-    margin: 5px 0 15px 0;
+    margin: 4px 0 12px 0;
     cursor: pointer;
     color: #0066cc;
     text-decoration: underline;
+    font-size: 13px;
+  }
+  .download-btn {
+    margin-top: 20px;
+    padding: 9px 18px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: none;
+    background: #0b63ce;
+    color: #fff;
+    cursor: pointer;
+  }
+  .download-btn:hover {
+    background: #094f9f;
   }
 </style>
-
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
 
-<h1>KG5IEF — Passive Vertical / Vertical Yagi Calculator (with 3D Pattern + TOA)</h1>
-
-<label>Frequency (MHz): </label>
-<input type="number" id="freq" value="146.000" step="0.001">
-<br><br>
-
-<label><input type="checkbox" id="useReflector"> Add Reflector</label>
-<br><br>
-
-<label>Number of Directors:</label>
-<select id="directors">
-  <option value="0" selected>0</option>
-  <option value="1">1</option>
-  <option value="2">2</option>
-  <option value="3">3</option>
-</select>
-<br><br>
-
-<label><input type="checkbox" id="elevatedRadials"> Elevated Radials (0.05 λ above ground)</label>
-
-<h2 id="gainLine"></h2>
-
-<div id="summary" class="summary-block"></div>
-
-<h2>Element Table</h2>
-<div id="tableContainer"></div>
-
-<div id="plotsContainer">
-  <h2>Radiation Patterns</h2>
-
-  <div id="azimuthPlot"></div>
-  <div id="azFreq" class="freq-label"></div>
-
-  <div id="gainSummary"></div>
-  <a href="#" id="toggleGainDetails">Show advanced gain metrics</a>
-  <div id="gainDetails" style="display:none;"></div>
-
-  <div id="elevationPlot"></div>
-  <div id="elFreq" class="freq-label"></div>
-
-  <div id="toaCard" class="toa-card"></div>
-
-  <h2>3D Radiation Pattern (Absolute Gain, dBi)</h2>
-  <div id="pattern3D"></div>
+<div class="header-banner">
+  <h1>KG5IEF Antenna Design Tool</h1>
+  <p>Passive vertical / vertical Yagi with 3D pattern and TOA callout</p>
 </div>
 
-<div id="build" class="build-block"></div>
+<div class="page">
 
-<button class="download-btn" onclick="downloadFile()">Download Results</button>
+  <div class="control-row">
+    <label>Frequency (MHz):
+      <input type="number" id="freq" value="146.000" step="0.001">
+    </label>
+  </div>
+
+  <div class="control-row">
+    <label><input type="checkbox" id="useReflector">Add Reflector</label>
+  </div>
+
+  <div class="control-row">
+    <label>Number of Directors:
+      <select id="directors">
+        <option value="0" selected>0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="control-row">
+    <label><input type="checkbox" id="elevatedRadials">Elevated Radials (0.05 λ above ground)</label>
+  </div>
+
+  <h2 id="gainLine"></h2>
+  <div id="summary" class="summary-block"></div>
+
+  <h2>Element Table</h2>
+  <div id="tableContainer"></div>
+
+  <div id="plotsContainer">
+    <h2>Radiation Patterns</h2>
+
+    <div id="azimuthPlot"></div>
+    <div id="azFreq" class="freq-label"></div>
+
+    <div id="gainSummary"></div>
+    <a href="#" id="toggleGainDetails">Show advanced gain metrics</a>
+    <div id="gainDetails" style="display:none;"></div>
+
+    <div id="elevationPlot"></div>
+    <div id="elFreq" class="freq-label"></div>
+
+    <div id="toaCard" class="toa-card"></div>
+
+    <h2>3D Radiation Pattern (Absolute Gain, dBi)</h2>
+    <div id="pattern3D"></div>
+  </div>
+
+  <div id="build" class="build-block"></div>
+
+  <button class="download-btn" onclick="window.print()">Download / Print Results</button>
+
+</div>
 
 <script>
 // ---------- Utility: meters → feet/inches ----------
 function toFeetInches(m) {
-  let totalInches = m * 39.3701;
-  let feet = Math.floor(totalInches / 12);
-  let inches = totalInches % 12;
-  let frac = Math.round((inches - Math.floor(inches)) * 16);
+  var totalInches = m * 39.3701;
+  var feet = Math.floor(totalInches / 12);
+  var inches = totalInches % 12;
+  var frac = Math.round((inches - Math.floor(inches)) * 16);
   if (frac === 16) { inches += 1; frac = 0; }
-  return `${feet} ft ${Math.floor(inches)} ${frac}/16 in`;
+  return feet + " ft " + Math.floor(inches) + " " + frac + "/16 in";
 }
 
 // ---------- Base forward gain (dBi) ----------
@@ -157,12 +241,12 @@ function baseGain(nDir, hasRef) {
 
 // ---------- Array model ----------
 function buildArrayModel(hasRef, nDir, lambda) {
-  let positions = [];
-  let amps = [];
-  let phases = [];
+  var positions = [];
+  var amps = [];
+  var phases = [];
 
-  let refSpacing = 0.15 * lambda;
-  let dirSpacing = 0.10 * lambda;
+  var refSpacing = 0.15 * lambda;
+  var dirSpacing = 0.10 * lambda;
 
   if (hasRef) {
     positions.push(-refSpacing);
@@ -174,13 +258,13 @@ function buildArrayModel(hasRef, nDir, lambda) {
   amps.push(1.0);
   phases.push(0.0);
 
-  for (let i = 1; i <= nDir; i++) {
+  for (var i = 1; i <= nDir; i++) {
     positions.push(i * dirSpacing);
     amps.push(0.8);
     phases.push(60 * Math.PI / 180);
   }
 
-  return { positions, amps, phases };
+  return { positions: positions, amps: amps, phases: phases };
 }
 
 // ---------- Simple elevation element factor ----------
@@ -190,10 +274,10 @@ function elevationElementFactor(elevRad) {
 
 // ---------- Array factor ----------
 function arrayFactor(theta, phi, k, positions, amps, phases) {
-  let re = 0, im = 0;
-  let sx = Math.sin(theta) * Math.cos(phi);
-  for (let i = 0; i < positions.length; i++) {
-    let phase = phases[i] + k * positions[i] * sx;
+  var re = 0, im = 0;
+  var sx = Math.sin(theta) * Math.cos(phi);
+  for (var i = 0; i < positions.length; i++) {
+    var phase = phases[i] + k * positions[i] * sx;
     re += amps[i] * Math.cos(phase);
     im += amps[i] * Math.sin(phase);
   }
@@ -202,118 +286,130 @@ function arrayFactor(theta, phi, k, positions, amps, phases) {
 
 // ---------- Azimuth pattern ----------
 function computeAzimuthPattern(lambda, hasRef, nDir) {
-  let angles = [];
-  let dBs = [];
+  var angles = [];
+  var dBs = [];
 
   if (!hasRef && nDir === 0) {
-    for (let deg = 0; deg < 360; deg += 2) {
+    for (var deg = 0; deg < 360; deg += 2) {
       angles.push(deg);
       dBs.push(0);
     }
-    return { angles, dBs };
+    return { angles: angles, dBs: dBs };
   }
 
-  let k = 2 * Math.PI / lambda;
-  let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
+  var k = 2 * Math.PI / lambda;
+  var model = buildArrayModel(hasRef, nDir, lambda);
+  var positions = model.positions, amps = model.amps, phases = model.phases;
 
-  let theta = 90 * Math.PI / 180;
-  let ef = elevationElementFactor(0);
+  var theta = 90 * Math.PI / 180;
+  var ef = elevationElementFactor(0);
 
-  let vals = [];
-  let maxVal = 0;
+  var vals = [];
+  var maxVal = 0;
 
-  for (let deg = 0; deg < 360; deg += 2) {
-    let phi = deg * Math.PI / 180;
-    let field = arrayFactor(theta, phi, k, positions, amps, phases) * ef;
+  for (var deg2 = 0; deg2 < 360; deg2 += 2) {
+    var phi = deg2 * Math.PI / 180;
+    var field = arrayFactor(theta, phi, k, positions, amps, phases) * ef;
     vals.push(field);
     if (field > maxVal) maxVal = field;
-    angles.push(deg);
+    angles.push(deg2);
   }
 
-  for (let v of vals) {
-    let d = 20 * Math.log10(v / (maxVal || 1));
+  for (var j = 0; j < vals.length; j++) {
+    var v = vals[j];
+    var d = 20 * Math.log10(v / (maxVal || 1));
     if (!isFinite(d)) d = -60;
     if (d < -30) d = -30;
     dBs.push(d);
   }
 
-  return { angles, dBs };
+  return { angles: angles, dBs: dBs };
 }
 
 // ---------- Elevation pattern ----------
 function computeElevationPattern(lambda, hasRef, nDir) {
-  let k = 2 * Math.PI / lambda;
-  let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
+  var k = 2 * Math.PI / lambda;
+  var model = buildArrayModel(hasRef, nDir, lambda);
+  var positions = model.positions, amps = model.amps, phases = model.phases;
 
-  let phi = 0;
-  let angles = [], dBs = [], vals = [], maxVal = 0;
+  var phi = 0;
+  var angles = [], dBs = [], vals = [], maxVal = 0;
 
-  for (let elev = 0; elev <= 90; elev++) {
-    let elevRad = elev * Math.PI / 180;
-    let theta = (90 - elev) * Math.PI / 180;
+  for (var elev = 0; elev <= 90; elev++) {
+    var elevRad = elev * Math.PI / 180;
+    var theta = (90 - elev) * Math.PI / 180;
 
-    let ef = elevationElementFactor(elevRad);
+    var ef = elevationElementFactor(elevRad);
 
-    let af;
+    var af;
     if (!hasRef && nDir === 0) {
       af = 1.0;
     } else {
       af = arrayFactor(theta, phi, k, positions, amps, phases);
     }
 
-    let field = af * ef;
+    var field = af * ef;
     vals.push(field);
     if (field > maxVal) maxVal = field;
     angles.push(elev);
   }
 
-  for (let v of vals) {
-    let d = 20 * Math.log10(v / (maxVal || 1));
-    if (!isFinite(d)) d = -60;
-    if (d < -30) d = -30;
-    dBs.push(d);
+  for (var i = 0; i < vals.length; i++) {
+    var v2 = vals[i];
+    var d2 = 20 * Math.log10(v2 / (maxVal || 1));
+    if (!isFinite(d2)) d2 = -60;
+    if (d2 < -30) d2 = -30;
+    dBs.push(d2);
   }
 
-  return { angles, dBs };
+  return { angles: angles, dBs: dBs };
 }
 
 // ---------- Azimuth gain analysis ----------
 function analyzeAzimuth(az, forwardAbs_dBi) {
-  let angles = az.angles;
-  let dBs = az.dBs;
+  var angles = az.angles;
+  var dBs = az.dBs;
 
-  let fAbs_dBi = forwardAbs_dBi;
-  let fAbs_dBd = fAbs_dBi - 2.15;
+  var fAbs_dBi = forwardAbs_dBi;
+  var fAbs_dBd = fAbs_dBi - 2.15;
 
-  let bIdx = angles.indexOf(180);
-  let bRel = (bIdx !== -1) ? dBs[bIdx] : Math.min(...dBs);
-  let bAbs_dBi = fAbs_dBi + bRel;
-  let fbRatio = fAbs_dBi - bAbs_dBi;
+  var bIdx = angles.indexOf(180);
+  var bRel = (bIdx !== -1) ? dBs[bIdx] : Math.min.apply(null, dBs);
+  var bAbs_dBi = fAbs_dBi + bRel;
+  var fbRatio = fAbs_dBi - bAbs_dBi;
 
-  let thr3 = -3;
-  let valid3 = angles.filter((a, i) => dBs[i] >= thr3);
-  let bw3 = valid3.length ? (Math.max(...valid3) - Math.min(...valid3)) : 360;
+  var thr3 = -3;
+  var valid3 = [];
+  for (var i = 0; i < angles.length; i++) {
+    if (dBs[i] >= thr3) valid3.push(angles[i]);
+  }
+  var bw3 = valid3.length ? (Math.max.apply(null, valid3) - Math.min.apply(null, valid3)) : 360;
 
-  let thr10 = -10;
-  let valid10 = angles.filter((a, i) => dBs[i] >= thr10);
-  let bw10 = valid10.length ? (Math.max(...valid10) - Math.min(...valid10)) : 360;
+  var thr10 = -10;
+  var valid10 = [];
+  for (var j = 0; j < angles.length; j++) {
+    if (dBs[j] >= thr10) valid10.push(angles[j]);
+  }
+  var bw10 = valid10.length ? (Math.max.apply(null, valid10) - Math.min.apply(null, valid10)) : 360;
 
-  let mainMin = valid3.length ? Math.min(...valid3) : 0;
-  let mainMax = valid3.length ? Math.max(...valid3) : 0;
-  let sideRel = -30;
-  for (let i = 0; i < angles.length; i++) {
-    let a = angles[i];
+  var mainMin = valid3.length ? Math.min.apply(null, valid3) : 0;
+  var mainMax = valid3.length ? Math.max.apply(null, valid3) : 0;
+  var sideRel = -30;
+  for (var k = 0; k < angles.length; k++) {
+    var a = angles[k];
     if (a < mainMin || a > mainMax) {
-      if (dBs[i] > sideRel) sideRel = dBs[i];
+      if (dBs[k] > sideRel) sideRel = dBs[k];
     }
   }
-  let sideAbs_dBi = fAbs_dBi + sideRel;
-  let fsRatio = fAbs_dBi - sideAbs_dBi;
+  var sideAbs_dBi = fAbs_dBi + sideRel;
+  var fsRatio = fAbs_dBi - sideAbs_dBi;
 
-  let sumLin = 0;
-  for (let d of dBs) sumLin += Math.pow(10, d / 10);
-  let avgLin = sumLin / dBs.length;
-  let effPct = avgLin * 100;
+  var sumLin = 0;
+  for (var m = 0; m < dBs.length; m++) {
+    sumLin += Math.pow(10, dBs[m] / 10);
+  }
+  var avgLin = sumLin / dBs.length;
+  var effPct = avgLin * 100;
 
   return {
     forwardAbs_dBi: fAbs_dBi,
@@ -330,62 +426,63 @@ function analyzeAzimuth(az, forwardAbs_dBi) {
 
 // ---------- 3D pattern ----------
 function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi) {
-  let k = 2 * Math.PI / lambda;
-  let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
+  var k = 2 * Math.PI / lambda;
+  var model = buildArrayModel(hasRef, nDir, lambda);
+  var positions = model.positions, amps = model.amps, phases = model.phases;
 
-  let thetaSteps = 181;
-  let phiSteps = 361;
+  var thetaSteps = 61;  // coarse to keep it light
+  var phiSteps = 121;
 
-  let thetaVals = [];
-  let phiVals = [];
-  for (let i = 0; i < thetaSteps; i++) thetaVals.push(i * Math.PI / 180);
-  for (let j = 0; j < phiSteps; j++) phiVals.push(j * Math.PI / 180);
+  var thetaVals = [];
+  var phiVals = [];
+  for (var i = 0; i < thetaSteps; i++) thetaVals.push(i * Math.PI / 180 * 3); // 0..180
+  for (var j = 0; j < phiSteps; j++) phiVals.push(j * Math.PI / 180 * 3);   // 0..360
 
-  let maxField = 0;
-  let fieldGrid = new Array(thetaSteps);
+  var maxField = 0;
+  var fieldGrid = new Array(thetaSteps);
 
-  for (let i = 0; i < thetaSteps; i++) {
-    fieldGrid[i] = new Array(phiSteps);
-    let theta = thetaVals[i];
-    let elev = (90 - (theta * 180 / Math.PI)) * Math.PI / 180;
-    let ef = elevationElementFactor(elev);
+  for (var ti = 0; ti < thetaSteps; ti++) {
+    fieldGrid[ti] = new Array(phiSteps);
+    var theta = thetaVals[ti];
+    var elev = (90 - (theta * 180 / Math.PI)) * Math.PI / 180;
+    var ef = elevationElementFactor(elev);
 
-    for (let j = 0; j < phiSteps; j++) {
-      let phi = phiVals[j];
+    for (var pj = 0; pj < phiSteps; pj++) {
+      var phi = phiVals[pj];
 
-      let af;
+      var af;
       if (!hasRef && nDir === 0) {
         af = 1.0;
       } else {
         af = arrayFactor(theta, phi, k, positions, amps, phases);
       }
 
-      let field = af * ef;
-      fieldGrid[i][j] = field;
+      var field = af * ef;
+      fieldGrid[ti][pj] = field;
       if (field > maxField) maxField = field;
     }
   }
 
   if (maxField <= 0) maxField = 1;
 
-  let x = [], y = [], z = [], gain = [];
+  var x = [], y = [], z = [], gain = [];
 
-  for (let i = 0; i < thetaSteps; i++) {
-    let theta = thetaVals[i];
-    let xRow = [], yRow = [], zRow = [], gRow = [];
+  for (var ti2 = 0; ti2 < thetaSteps; ti2++) {
+    var theta2 = thetaVals[ti2];
+    var xRow = [], yRow = [], zRow = [], gRow = [];
 
-    for (let j = 0; j < phiSteps; j++) {
-      let phi = phiVals[j];
-      let rel = fieldGrid[i][j] / maxField;
-      let rel_dB = 20 * Math.log10(rel);
+    for (var pj2 = 0; pj2 < phiSteps; pj2++) {
+      var phi2 = phiVals[pj2];
+      var rel = fieldGrid[ti2][pj2] / maxField;
+      var rel_dB = 20 * Math.log10(rel);
       if (!isFinite(rel_dB)) rel_dB = -60;
-      let abs_dBi = forwardAbs_dBi + rel_dB;
+      var abs_dBi = forwardAbs_dBi + rel_dB;
 
-      let r = Math.max(0, abs_dBi - (forwardAbs_dBi - 30));
-      let st = Math.sin(theta);
-      let ct = Math.cos(theta);
-      let sp = Math.sin(phi);
-      let cp = Math.cos(phi);
+      var r = Math.max(0, abs_dBi - (forwardAbs_dBi - 30));
+      var st = Math.sin(theta2);
+      var ct = Math.cos(theta2);
+      var sp = Math.sin(phi2);
+      var cp = Math.cos(phi2);
 
       xRow.push(r * st * cp);
       yRow.push(r * st * sp);
@@ -399,13 +496,13 @@ function compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi) {
     gain.push(gRow);
   }
 
-  return { x, y, z, gain };
+  return { x: x, y: y, z: z, gain: gain };
 }
 
 // ---------- Plot updater ----------
 function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi, fMHz) {
-  let az = computeAzimuthPattern(lambda, hasRef, nDir);
-  let el = computeElevationPattern(lambda, hasRef, nDir);
+  var az = computeAzimuthPattern(lambda, hasRef, nDir);
+  var el = computeElevationPattern(lambda, hasRef, nDir);
 
   // Azimuth
   Plotly.newPlot("azimuthPlot", [{
@@ -419,16 +516,20 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi, fMHz) {
     polar: {
       radialaxis: { range: [-30, 0], dtick: 5, angle: 90 },
       angularaxis: { direction: "counterclockwise" }
-    }
+    },
+    margin: { t: 40, r: 20, b: 20, l: 20 }
   });
 
-  let azFreq = document.getElementById("azFreq");
-  if (azFreq) azFreq.innerHTML = `Azimuth Pattern — ${fMHz.toFixed(3)} MHz`;
+  var azFreq = document.getElementById("azFreq");
+  if (azFreq) azFreq.innerHTML = "Azimuth Pattern — " + fMHz.toFixed(3) + " MHz";
 
   // Elevation
-  let elAbs = el.dBs.map(d => d + forwardAbs_dBi);
-  let minEl = forwardAbs_dBi - 30;
-  let maxEl = forwardAbs_dBi;
+  var elAbs = [];
+  for (var i = 0; i < el.dBs.length; i++) {
+    elAbs.push(el.dBs[i] + forwardAbs_dBi);
+  }
+  var minEl = forwardAbs_dBi - 30;
+  var maxEl = forwardAbs_dBi;
 
   Plotly.newPlot("elevationPlot", [{
     x: el.angles,
@@ -438,25 +539,201 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi, fMHz) {
   }], {
     title: "Elevation Pattern (0–90° above horizon, Absolute Gain)",
     xaxis: { title: "Elevation Angle above Horizon (degrees)", range: [0, 90] },
-    yaxis: { title: "Gain (dBi)", range: [minEl, maxEl], dtick: 5 }
+    yaxis: { title: "Gain (dBi)", range: [minEl, maxEl], dtick: 5 },
+    margin: { t: 40, r: 20, b: 40, l: 60 }
   });
 
-  let elFreq = document.getElementById("elFreq");
-  if (elFreq) elFreq.innerHTML = `Elevation Pattern — ${fMHz.toFixed(3)} MHz`;
+  var elFreq = document.getElementById("elFreq");
+  if (elFreq) elFreq.innerHTML = "Elevation Pattern — " + fMHz.toFixed(3) + " MHz";
 
   // Compute TOA
-  let maxVal = -Infinity;
-  let maxIdx = 0;
-  for (let i = 0; i < elAbs.length; i++) {
-    if (elAbs[i] > maxVal) {
-      maxVal = elAbs[i];
-      maxIdx = i;
+  var maxVal = -Infinity;
+  var maxIdx = 0;
+  for (var j = 0; j < elAbs.length; j++) {
+    if (elAbs[j] > maxVal) {
+      maxVal = elAbs[j];
+      maxIdx = j;
     }
   }
-  let toaAngle = el.angles[maxIdx];
+  var toaAngle = el.angles[maxIdx];
 
   // TOA card
-  let toaCard = document.getElementById("toaCard");
+  var toaCard = document.getElementById("toaCard");
   if (toaCard) {
-    toaCard.innerHTML = `
-      <b>📡 Maximum Takeoff Angle (TOA)</
+    toaCard.innerHTML =
+      "<b>📡 Maximum Takeoff Angle (TOA)</b><br>" +
+      toaAngle.toFixed(1) + "° above horizon at " + fMHz.toFixed(3) + " MHz";
+  }
+
+  // 3D pattern
+  var p3d = compute3DPattern(lambda, hasRef, nDir, forwardAbs_dBi);
+  Plotly.newPlot("pattern3D", [{
+    type: "surface",
+    x: p3d.x,
+    y: p3d.y,
+    z: p3d.z,
+    surfacecolor: p3d.gain,
+    colorscale: "Viridis",
+    cmin: forwardAbs_dBi - 30,
+    cmax: forwardAbs_dBi,
+    showscale: true,
+    colorbar: { title: "Gain (dBi)" }
+  }], {
+    scene: {
+      xaxis: { title: "X" },
+      yaxis: { title: "Y" },
+      zaxis: { title: "Z" }
+    },
+    margin: { t: 40, r: 10, b: 10, l: 10 }
+  });
+
+  // Gain summary + details
+  var azStats = analyzeAzimuth(az, forwardAbs_dBi);
+  var gs = document.getElementById("gainSummary");
+  if (gs) {
+    gs.innerHTML =
+      "<h2>Gain Summary</h2>" +
+      "<table><tr><th>Forward Gain (dBi)</th><th>Forward Gain (dBd)</th><th>F/B (dB)</th><th>3 dB BW (°)</th><th>10 dB BW (°)</th></tr>" +
+      "<tr><td>" + azStats.forwardAbs_dBi.toFixed(1) + "</td>" +
+      "<td>" + azStats.forwardAbs_dBd.toFixed(1) + "</td>" +
+      "<td>" + azStats.fbRatio.toFixed(1) + "</td>" +
+      "<td>" + azStats.bw3.toFixed(0) + "</td>" +
+      "<td>" + azStats.bw10.toFixed(0) + "</td></tr></table>";
+  }
+
+  var gd = document.getElementById("gainDetails");
+  if (gd) {
+    gd.innerHTML =
+      "<table><tr><th>Back Gain (dBi)</th><th>Strongest Sidelobe (dBi)</th><th>F/S (dB)</th><th>Pattern Efficiency (%)</th></tr>" +
+      "<tr><td>" + azStats.backAbs_dBi.toFixed(1) + "</td>" +
+      "<td>" + azStats.sideAbs_dBi.toFixed(1) + "</td>" +
+      "<td>" + azStats.fsRatio.toFixed(1) + "</td>" +
+      "<td>" + azStats.effPct.toFixed(1) + "</td></tr></table>";
+  }
+}
+
+// ---------- Element table + build notes ----------
+function updateElementsAndBuild(lambda, hasRef, nDir, fMHz) {
+  var tableDiv = document.getElementById("tableContainer");
+  var buildDiv = document.getElementById("build");
+  if (!tableDiv || !buildDiv) return;
+
+  var drivenLen = 0.25 * lambda;
+  var refLen = 0.26 * lambda;
+  var dirLen = 0.24 * lambda;
+
+  var html = "<table><tr><th>Element</th><th>Type</th><th>Length (m)</th><th>Length (ft/in)</th><th>Position (m)</th></tr>";
+
+  var pos = 0;
+  var idx = 1;
+
+  if (hasRef) {
+    var refPos = -0.15 * lambda;
+    html += "<tr><td>" + (idx++) + "</td><td>Reflector</td><td>" +
+      refLen.toFixed(3) + "</td><td>" + toFeetInches(refLen) +
+      "</td><td>" + refPos.toFixed(3) + "</td></tr>";
+  }
+
+  html += "<tr><td>" + (idx++) + "</td><td>Driven</td><td>" +
+    drivenLen.toFixed(3) + "</td><td>" + toFeetInches(drivenLen) +
+    "</td><td>0.000</td></tr>";
+
+  for (var d = 1; d <= nDir; d++) {
+    var dPos = d * 0.10 * lambda;
+    html += "<tr><td>" + (idx++) + "</td><td>Director " + d + "</td><td>" +
+      dirLen.toFixed(3) + "</td><td>" + toFeetInches(dirLen) +
+      "</td><td>" + dPos.toFixed(3) + "</td></tr>";
+  }
+
+  html += "</table>";
+  tableDiv.innerHTML = html;
+
+  var hasRefText = hasRef ? "with a reflector" : "without a reflector";
+  var dirText = (nDir === 0) ? "no directors" :
+                (nDir === 1) ? "one director" :
+                nDir + " directors";
+
+  buildDiv.innerHTML =
+    "<b>Build Notes</b><br>" +
+    "Design frequency: " + fMHz.toFixed(3) + " MHz (" + (300 / fMHz).toFixed(3) + " m wavelength).<br>" +
+    "This layout uses a 1/4‑wave driven element " + hasRefText +
+    " and " + dirText + " spaced at 0.10 λ increments in front of the driven element.<br>" +
+    "Lengths are approximate free‑space values; adjust slightly for element diameter, mounting hardware, and real‑world tuning.";
+}
+
+// ---------- Summary line ----------
+function updateSummary(forwardAbs_dBi, hasRef, nDir, elevated, fMHz) {
+  var gainLine = document.getElementById("gainLine");
+  var summary = document.getElementById("summary");
+  if (!gainLine || !summary) return;
+
+  gainLine.textContent =
+    "Estimated forward gain: " + forwardAbs_dBi.toFixed(1) + " dBi at " + fMHz.toFixed(3) + " MHz";
+
+  var parts = [];
+  parts.push(hasRef ? "Reflector enabled" : "No reflector");
+  parts.push(nDir + " director(s)");
+  parts.push(elevated ? "Elevated radials (0.05 λ)" : "Ground‑mounted radial system");
+
+  summary.innerHTML =
+    "<b>Configuration:</b> " + parts.join(" · ") +
+    "<br><b>Reference:</b> Forward gain is approximate and assumes average ground and typical element Q.";
+}
+
+// ---------- Main calculate ----------
+function calculate() {
+  var fInput = document.getElementById("freq");
+  var useRef = document.getElementById("useReflector");
+  var dirsSel = document.getElementById("directors");
+  var elevChk = document.getElementById("elevatedRadials");
+  if (!fInput || !useRef || !dirsSel || !elevChk) return;
+
+  var fMHz = parseFloat(fInput.value) || 146.0;
+  var lambda = 300 / fMHz;
+
+  var hasRef = useRef.checked;
+  var nDir = parseInt(dirsSel.value, 10) || 0;
+  var elevated = elevChk.checked;
+
+  var fwd = baseGain(nDir, hasRef);
+  if (elevated) fwd += 0.5; // small bump for elevated radials
+
+  updateSummary(fwd, hasRef, nDir, elevated, fMHz);
+  updateElementsAndBuild(lambda, hasRef, nDir, fMHz);
+  updatePlots(lambda, hasRef, nDir, fwd, fMHz);
+}
+
+// ---------- Toggle advanced gain metrics ----------
+document.addEventListener("DOMContentLoaded", function () {
+  var t = document.getElementById("toggleGainDetails");
+  if (t) {
+    t.addEventListener("click", function (e) {
+      e.preventDefault();
+      var gd = document.getElementById("gainDetails");
+      if (!gd) return;
+      if (gd.style.display === "none" || gd.style.display === "") {
+        gd.style.display = "block";
+        t.textContent = "Hide advanced gain metrics";
+      } else {
+        gd.style.display = "none";
+        t.textContent = "Show advanced gain metrics";
+      }
+    });
+  }
+
+  var fInput = document.getElementById("freq");
+  var useRef = document.getElementById("useReflector");
+  var dirsSel = document.getElementById("directors");
+  var elevChk = document.getElementById("elevatedRadials");
+
+  if (fInput) fInput.addEventListener("change", calculate);
+  if (useRef) useRef.addEventListener("change", calculate);
+  if (dirsSel) dirsSel.addEventListener("change", calculate);
+  if (elevChk) elevChk.addEventListener("change", calculate);
+
+  calculate();
+});
+</script>
+
+</body>
+</html>
