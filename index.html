@@ -422,8 +422,8 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi, fMHz) {
     }
   });
 
-  document.getElementById("azFreq").innerHTML =
-    `Azimuth Pattern — ${fMHz.toFixed(3)} MHz`;
+  let azFreq = document.getElementById("azFreq");
+  if (azFreq) azFreq.innerHTML = `Azimuth Pattern — ${fMHz.toFixed(3)} MHz`;
 
   // Elevation
   let elAbs = el.dBs.map(d => d + forwardAbs_dBi);
@@ -441,8 +441,8 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi, fMHz) {
     yaxis: { title: "Gain (dBi)", range: [minEl, maxEl], dtick: 5 }
   });
 
-  document.getElementById("elFreq").innerHTML =
-    `Elevation Pattern — ${fMHz.toFixed(3)} MHz`;
+  let elFreq = document.getElementById("elFreq");
+  if (elFreq) elFreq.innerHTML = `Elevation Pattern — ${fMHz.toFixed(3)} MHz`;
 
   // Compute TOA
   let maxVal = -Infinity;
@@ -450,4 +450,13 @@ function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi, fMHz) {
   for (let i = 0; i < elAbs.length; i++) {
     if (elAbs[i] > maxVal) {
       maxVal = elAbs[i];
-      maxIdx = i
+      maxIdx = i;
+    }
+  }
+  let toaAngle = el.angles[maxIdx];
+
+  // TOA card
+  let toaCard = document.getElementById("toaCard");
+  if (toaCard) {
+    toaCard.innerHTML = `
+      <b>📡 Maximum Takeoff Angle (TOA)</
