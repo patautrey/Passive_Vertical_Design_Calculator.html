@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>K6SJE/P Passive Vertical & Vertical-Yagi Designer</title>
+<title>KG5IEF Passive Vertical & Vertical-Yagi Designer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="preconnect" href="https://cdn.plot.ly">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
 <style>
@@ -133,7 +132,6 @@
     font-size: 14px;
     margin-top: 6px;
   }
-  .summary-block b { font-weight: 600; }
   .warning-block {
     margin-top: 10px;
     padding: 10px 12px;
@@ -190,11 +188,6 @@
     color: #8a94a8;
     font-size: 13px;
   }
-  .footer-note {
-    margin-top: 18px;
-    font-size: 12px;
-    color: #777;
-  }
   @media (max-width: 900px) {
     .grid { grid-template-columns: minmax(0, 1fr); }
     .patterns-grid { grid-template-columns: minmax(0, 1fr); }
@@ -204,8 +197,8 @@
 <body>
 
 <div class="header-banner">
-  <h1>K6SJE/P Passive Vertical & Vertical-Yagi Designer</h1>
-  <p>Ground-mounted vertical array with physically-correct TOA, DX Turbo Mode, and realistic ground-reflected gain.</p>
+  <h1>KG5IEF Passive Vertical & Vertical‑Yagi Designer</h1>
+  <p>Ground‑mounted vertical array with physically‑correct TOA, DX Turbo Mode, and realistic ground‑reflected gain.</p>
 </div>
 
 <div class="page">
@@ -423,19 +416,16 @@
         <div id="elevationPlot"></div>
       </div>
     </div>
-        <h3>3D Radiation Pattern (Realistic Ground-Reflected Gain)</h3>
+    <h3>3D Radiation Pattern (Realistic Ground-Reflected Gain)</h3>
     <div id="pattern3D"></div>
   </div>
 
-  <!-- Teaching Tool: How to Improve Your Vertical Antenna Performance -->
   <div class="card" style="margin-top:20px;">
     <h3>How to Improve Your Vertical Antenna Performance</h3>
-
     <p style="font-size:14px; color:#555;">
-      Vertical antennas are simple, powerful, and incredibly sensitive to their environment.
-      Here are the most effective ways to boost performance, in order of real‑world impact:
+      Vertical antennas are simple, powerful, and sensitive to their environment.
+      Here are effective ways to boost performance:
     </p>
-
     <ol style="font-size:14px; color:#333; line-height:1.45;">
       <li><b>Add a reflector</b> — Improves front‑to‑back ratio and pushes more signal forward.</li>
       <li><b>Add a director</b> — Narrows the beam and increases forward gain.</li>
@@ -445,18 +435,45 @@
       <li><b>Lengthen the elements to ~0.70 λ</b> — Creates a strong low‑angle DX lobe (requires matching).</li>
       <li><b>Choose the best time of day or night</b> — Propagation can outperform hardware improvements.</li>
     </ol>
-
     <p style="font-size:13px; color:#777; margin-top:10px;">
-      Note: Seaside operation is intentionally excluded here, but remains the single most powerful
-      environmental boost when available.
+      Seaside operation is not listed here, but remains one of the strongest environmental boosts when available.
+    </p>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h3>Ground Enhancements: Moisture, Conductivity & Alternatives to Radials</h3>
+    <p style="font-size:14px; color:#555;">
+      A vertical’s efficiency depends heavily on how easily RF current can return to ground.
+      Radials are powerful, but several other techniques can improve conductivity and reduce ground loss.
+    </p>
+    <ul style="font-size:14px; color:#333; line-height:1.45;">
+      <li><b>Ground screen (wire mesh)</b> — A sheet of welded wire mesh or hardware cloth under the base reduces near‑field loss when full radials aren’t possible.</li>
+      <li><b>Conductive fabric / Faraday cloth</b> — Flexible alternative to metal mesh for portable or stealth setups.</li>
+      <li><b>Ground rods</b> — Great for lightning and DC grounding; modest RF benefit unless combined with radials or a screen.</li>
+      <li><b>Radials + ground screen</b> — A small mesh under the base plus several radials can outperform a large radial‑only system on poor soil.</li>
+      <li><b>Short radials + rods</b> — Multiple short radials tied into one or more rods still reduce RF loss compared to a rod alone.</li>
+      <li><b>Elevated radials</b> — Tuned elevated radials reduce dependence on soil conductivity and often outperform large ground‑mounted radial fields.</li>
+      <li><b>Watering the ground</b> — Moist soil improves conductivity; watering around the base and radial field can noticeably help on low bands.</li>
+      <li><b>Adding salt to the soil</b> — Saltwater has high conductivity and can temporarily improve RF performance. <b>Warning:</b> salt can damage or kill grass and plants.</li>
+      <li><b>Saltwater buckets or trenches</b> — A controlled way to boost conductivity without spreading salt everywhere.</li>
+      <li><b>Seasonal moisture</b> — After rain, snowmelt, or in winter, ground conductivity improves naturally and verticals often “wake up.”</li>
+    </ul>
+    <p style="font-size:13px; color:#777; margin-top:10px;">
+      Rule of thumb: ground rods help safety; radials, moisture, and ground screens move the needle for RF efficiency.
+    </p>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h3>Export / Copy Design Summary</h3>
+    <button id="copySummaryBtn" style="padding:8px 14px; font-size:14px; cursor:pointer;">
+      Copy Full Antenna Summary
+    </button>
+    <p style="font-size:13px; color:#777; margin-top:10px;">
+      This copies a complete text summary including your callsign <b>KG5IEF</b>.
     </p>
   </div>
 
 </div> <!-- end .page -->
-
-<!-- ========================= -->
-<!-- FULL JAVASCRIPT ENGINE   -->
-<!-- ========================= -->
 
 <script>
 function metersToFeetInches(m) {
@@ -468,19 +485,78 @@ function metersToFeetInches(m) {
 function db(x) { return 10 * Math.log10(x); }
 function undb(x) { return Math.pow(10, x / 10); }
 
-function updateAll() {
+const freqMHz           = document.getElementById("freqMHz");
+const lambdaLabel       = document.getElementById("lambdaLabel");
+const designFreqLabel   = document.getElementById("designFreqLabel");
+const designLambdaLabel = document.getElementById("designLambdaLabel");
+const drivenLambdaLabel = document.getElementById("drivenLambdaLabel");
 
-  /* ---------------------------
-     FREQUENCY + BASIC GEOMETRY
-     --------------------------- */
-  const fMHz = parseFloat(freqMHz.value);
+const addReflector      = document.getElementById("addReflector");
+const numDirectors      = document.getElementById("numDirectors");
+const directorSpacing   = document.getElementById("directorSpacing");
+const directorLengthFactor = document.getElementById("directorLengthFactor");
+const reflectorFactor   = document.getElementById("reflectorFactor");
+
+const elementHeight     = document.getElementById("elementHeight");
+const locSeaside        = document.getElementById("locSeaside");
+const dxMode            = document.getElementById("dxMode");
+
+const radialCount       = document.getElementById("radialCount");
+const radialLengthFactor= document.getElementById("radialLengthFactor");
+const elevatedRadials   = document.getElementById("elevatedRadials");
+
+const txPower           = document.getElementById("txPower");
+const feedlineLoss      = document.getElementById("feedlineLoss");
+
+const configText        = document.getElementById("configText");
+const dxWarning         = document.getElementById("dxWarning");
+const radialWarning     = document.getElementById("radialWarning");
+
+const gainLabel         = document.getElementById("gainLabel");
+const toaLabel          = document.getElementById("toaLabel");
+const fbLabel           = document.getElementById("fbLabel");
+const boostLabel        = document.getElementById("boostLabel");
+
+const zLabel            = document.getElementById("zLabel");
+const swrCenterLabel    = document.getElementById("swrCenterLabel");
+const bw2Label          = document.getElementById("bw2Label");
+const bw3Label          = document.getElementById("bw3Label");
+
+const rradLabel         = document.getElementById("rradLabel");
+const rgroundLabel      = document.getElementById("rgroundLabel");
+const rtotalLabel       = document.getElementById("rtotalLabel");
+const effLabel          = document.getElementById("effLabel");
+const erpLabel          = document.getElementById("erpLabel");
+
+const matchWarning      = document.getElementById("matchWarning");
+const goodMatchNote     = document.getElementById("goodMatchNote");
+
+const elementTableBody  = document.querySelector("#elementTable tbody");
+const boomLengthLabel   = document.getElementById("boomLengthLabel");
+const totalWireLabel    = document.getElementById("totalWireLabel");
+
+const boomDiagram       = document.getElementById("boomDiagram");
+const radialDiagram     = document.getElementById("radialDiagram");
+const currentDiagram    = document.getElementById("currentDiagram");
+
+const copySummaryBtn    = document.getElementById("copySummaryBtn");
+
+function groundGamma(thetaRad, seaside) {
+  const sinT = Math.sin(thetaRad);
+  const base = seaside ? -0.95 : -0.6;
+  const tilt = 0.2 * (sinT - 0.5);
+  return base + tilt;
+}
+
+function updateAll() {
+  const fMHz = parseFloat(freqMHz.value) || 3.55;
   const lambda = 300 / fMHz;
 
-  lambdaLabel.textContent = lambda.toFixed(3);
-  designFreqLabel.textContent = fMHz.toFixed(3) + " MHz";
+  lambdaLabel.textContent       = lambda.toFixed(3);
+  designFreqLabel.textContent   = fMHz.toFixed(3) + " MHz";
   designLambdaLabel.textContent = lambda.toFixed(3) + " m";
 
-  const dx = dxMode.checked;
+  const dx      = dxMode.checked;
   const seaside = locSeaside.checked;
 
   let drivenLambda = dx ? 0.70 : 0.25;
@@ -488,21 +564,18 @@ function updateAll() {
   const drivenLength = drivenLambda * lambda;
   const scale = dx ? 2.8 : 1.0;
 
-  const nDir = parseInt(numDirectors.value);
-  const dSpacing = parseFloat(directorSpacing.value) * lambda;
-  const dFactor = parseFloat(directorLengthFactor.value);
-  const reflOn = addReflector.checked;
-  const reflFactor = parseFloat(reflectorFactor.value);
+  const nDir     = parseInt(numDirectors.value, 10) || 0;
+  const dSpacing = (parseFloat(directorSpacing.value) || 0) * lambda;
+  const dFactor  = parseFloat(directorLengthFactor.value) || 0.45;
+  const reflOn   = addReflector.checked;
+  const reflFactorVal = parseFloat(reflectorFactor.value) || 1.05;
 
-  /* ---------------------------
-     BUILD ELEMENT LIST
-     --------------------------- */
   const elements = [];
   if (reflOn) {
     elements.push({
       name: "Reflector",
       type: "Reflector",
-      length: reflFactor * lambda * scale,
+      length: reflFactorVal * lambda * scale,
       pos: -dSpacing * scale
     });
   }
@@ -524,13 +597,8 @@ function updateAll() {
   }
   elements.sort((a,b) => a.pos - b.pos);
 
-  /* ---------------------------
-     ELEMENT TABLE
-     --------------------------- */
-  const tbody = document.querySelector("#elementTable tbody");
-  tbody.innerHTML = "";
+  elementTableBody.innerHTML = "";
   let totalWire = 0;
-
   elements.forEach(el => {
     totalWire += el.length;
     const tr = document.createElement("tr");
@@ -541,48 +609,42 @@ function updateAll() {
       <td>${metersToFeetInches(el.length)}</td>
       <td>${el.pos.toFixed(3)}</td>
     `;
-    tbody.appendChild(tr);
+    elementTableBody.appendChild(tr);
   });
 
   const boomLength = elements[elements.length - 1].pos - elements[0].pos;
   boomLengthLabel.textContent = boomLength.toFixed(3);
-  totalWireLabel.textContent = totalWire.toFixed(3);
+  totalWireLabel.textContent  = totalWire.toFixed(3);
 
-  /* ---------------------------
-     CONFIG SUMMARY
-     --------------------------- */
   configText.textContent =
     `${reflOn ? "Reflector" : "No reflector"} · ${nDir} director(s) · Ground-mounted radial system`;
 
   dxWarning.style.display = dx ? "block" : "none";
 
-  const radialCount = parseInt(radialCount.value);
-  const radialFactor = parseFloat(radialLengthFactor.value);
-  const elevated = elevatedRadials.checked;
+  const radialCountVal = parseInt(radialCount.value, 10) || 4;
+  const radialFactor   = parseFloat(radialLengthFactor.value) || 0.25;
+  const elevated       = elevatedRadials.checked;
 
-  if (dx && (radialCount < 16 || radialFactor < 0.40)) {
+  if (dx && (radialCountVal < 16 || radialFactor < 0.40)) {
     radialWarning.style.display = "block";
   } else {
     radialWarning.style.display = "none";
   }
 
-  /* ---------------------------
-     IMPEDANCE MODEL
-     --------------------------- */
   let Rrad = 36;
   if (dx) Rrad *= 1.8;
 
-  let Rground = 20 / radialCount;
+  let Rground = 20 / radialCountVal;
   if (radialFactor >= 0.40) Rground *= 0.6;
   if (elevated) Rground *= 0.7;
 
   const Rtotal = Rrad + Rground;
-  const X = dx ? 25 : 5;
+  const X      = dx ? 25 : 5;
 
-  rradLabel.textContent = Rrad.toFixed(1);
+  rradLabel.textContent    = Rrad.toFixed(1);
   rgroundLabel.textContent = Rground.toFixed(1);
-  rtotalLabel.textContent = Rtotal.toFixed(1);
-  zLabel.textContent = `${Rtotal.toFixed(1)} + j${X.toFixed(1)}`;
+  rtotalLabel.textContent  = Rtotal.toFixed(1);
+  zLabel.textContent       = `${Rtotal.toFixed(1)} + j${X.toFixed(1)}`;
 
   const Zmag = Math.sqrt(Rtotal*Rtotal + X*X);
   let swr = Zmag / 50;
@@ -602,13 +664,10 @@ function updateAll() {
   bw2Label.textContent = bw2.toFixed(0);
   bw3Label.textContent = bw3.toFixed(0);
 
-  /* ---------------------------
-     GAIN, TOA, F/B
-     --------------------------- */
   let gain = 2.1 + nDir * 1.2;
   if (reflOn) gain += 1.0;
-  if (dx) gain += 2.0;
-  if (seaside) gain += 3.0;
+  if (dx)     gain += 2.0;
+  if (seaside)gain += 3.0;
   gainLabel.textContent = gain.toFixed(1);
 
   const boost = (dx ? 2.0 : 0) + (seaside ? 3.0 : 0);
@@ -622,32 +681,25 @@ function updateAll() {
 
   let fb = 8 + nDir * 4;
   if (reflOn) fb += 6;
-  if (dx) fb += 4;
+  if (dx)     fb += 4;
   fbLabel.textContent = fb.toFixed(1);
 
-  /* ---------------------------
-     ERP
-     --------------------------- */
-  const Ptx = parseFloat(txPower.value);
-  const feedLoss = parseFloat(feedlineLoss.value);
-  const eff = (Rrad / Rtotal) * 100;
+  const Ptx   = parseFloat(txPower.value) || 100;
+  const floss = parseFloat(feedlineLoss.value) || 0;
+  const eff   = (Rrad / Rtotal) * 100;
   effLabel.textContent = eff.toFixed(1);
 
-  const Pfeed = Ptx * undb(-feedLoss);
-  const Prad = Pfeed * (eff / 100);
-  const ERP = Prad * undb(gain);
+  const Pfeed = Ptx * undb(-floss);
+  const Prad  = Pfeed * (eff / 100);
+  const ERP   = Prad * undb(gain);
   erpLabel.textContent = ERP.toFixed(1);
 
-  /* ---------------------------
-     AZIMUTH PLOT
-     --------------------------- */
   const az = [];
   const azGain = [];
   for (let phi = 0; phi <= 360; phi += 5) {
     az.push(phi);
     azGain.push(gain - 0.5 * Math.abs(Math.sin(phi * Math.PI/180)));
   }
-
   Plotly.newPlot("azimuthPlot", [{
     x: az,
     y: azGain,
@@ -660,32 +712,17 @@ function updateAll() {
     yaxis: {title: "Gain (dBi)"}
   });
 
-  /* ---------------------------
-     PHYSICALLY-BASED ELEVATION
-     --------------------------- */
-  const hBase = parseFloat(elementHeight.value);
-  const heff = hBase + (drivenLength / 2);
-
-  const soil = seaside
-    ? { sigma: 5.0, epsr: 80.0 }
-    : { sigma: 0.005, epsr: 13.0 };
-
-  const k0 = 2 * Math.PI / lambda;
-
-  function groundGamma(thetaRad) {
-    const sinT = Math.sin(thetaRad);
-    const base = seaside ? -0.95 : -0.6;
-    const tilt = 0.2 * (sinT - 0.5);
-    return base + tilt;
-  }
+  const hBase = parseFloat(elementHeight.value) || 0;
+  const heff  = hBase + (drivenLength / 2);
+  const k0    = 2 * Math.PI / lambda;
 
   const el = [];
   const elGain = [];
   for (let th = 0; th <= 90; th += 2) {
     const thRad = th * Math.PI / 180;
-    const Ev = Math.sin(thRad);
-    const dphi = 2 * k0 * heff * Math.sin(thRad);
-    const Gamma = groundGamma(thRad);
+    const Ev    = Math.sin(thRad);
+    const dphi  = 2 * k0 * heff * Math.sin(thRad);
+    const Gamma = groundGamma(thRad, seaside);
     const E = Math.sqrt(
       Ev*Ev +
       (Gamma*Gamma) * Ev*Ev +
@@ -694,7 +731,6 @@ function updateAll() {
     el.push(th);
     elGain.push(gain + db(Math.max(E, 1e-6)));
   }
-
   Plotly.newPlot("elevationPlot", [{
     x: el,
     y: elGain,
@@ -707,26 +743,21 @@ function updateAll() {
     yaxis: {title: "Relative Gain (dB)"}
   });
 
-  /* ---------------------------
-     3D PATTERN
-     --------------------------- */
   const theta = [];
   const phiArr = [];
   const r = [];
-
   for (let th = 0; th <= 180; th += 5) {
     const elevDeg = th <= 90 ? th : 180 - th;
-    const thRad = elevDeg * Math.PI / 180;
-    const Ev = Math.sin(thRad);
-    const dphi = 2 * k0 * heff * Math.sin(thRad);
-    const Gamma = groundGamma(thRad);
+    const thRad   = elevDeg * Math.PI / 180;
+    const Ev      = Math.sin(thRad);
+    const dphi    = 2 * k0 * heff * Math.sin(thRad);
+    const Gamma   = groundGamma(thRad, seaside);
     const E = Math.sqrt(
       Ev*Ev +
       (Gamma*Gamma) * Ev*Ev +
       2 * Ev*Ev * Gamma * Math.cos(dphi)
     );
     const Edb = gain + db(Math.max(E, 1e-6));
-
     for (let ph = 0; ph <= 360; ph += 5) {
       const phRad = ph * Math.PI / 180;
       theta.push(th * Math.PI / 180);
@@ -734,7 +765,6 @@ function updateAll() {
       r.push(Math.max(0.01, Edb));
     }
   }
-
   const x = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.cos(phiArr[i]));
   const y = r.map((rv, i) => rv * Math.sin(theta[i]) * Math.sin(phiArr[i]));
   const z = r.map((rv, i) => rv * Math.cos(theta[i]));
@@ -758,69 +788,64 @@ function updateAll() {
     margin: {t: 20}
   });
 
-  /* ---------------------------
-     PLACEHOLDER DIAGRAMS
-     --------------------------- */
-  boomDiagram.textContent = "Boom spacing diagram (placeholder)";
-  radialDiagram.textContent = "Radial layout diagram (placeholder)";
-  currentDiagram.textContent = "Current distribution diagram (placeholder)";
+  if (boomDiagram)   boomDiagram.textContent   = "Boom spacing diagram (placeholder)";
+  if (radialDiagram) radialDiagram.textContent = "Radial layout diagram (placeholder)";
+  if (currentDiagram)currentDiagram.textContent= "Current distribution diagram (placeholder)";
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("input, select").forEach(el => {
-    el.addEventListener("input", updateAll);
-    el.addEventListener("change", updateAll);
+function generateTextSummary() {
+  return `
+KG5IEF Passive Vertical & Vertical‑Yagi Designer
+------------------------------------------------
+Design Frequency: ${designFreqLabel.textContent}
+Wavelength: ${designLambdaLabel.textContent}
+
+Configuration:
+  ${configText.textContent}
+
+Element Geometry:
+  Total boom length: ${boomLengthLabel.textContent} m
+  Total wire length: ${totalWireLabel.textContent} m
+
+Performance Metrics:
+  Forward gain: ${gainLabel.textContent} dBi
+  TOA: ${toaLabel.textContent}°
+  Front-to-back ratio: ${fbLabel.textContent} dB
+  ERP: ${erpLabel.textContent} W
+
+Impedance & Matching:
+  Feedpoint impedance: ${zLabel.textContent}
+  SWR @ f₀: ${swrCenterLabel.textContent}
+  2:1 bandwidth: ${bw2Label.textContent} kHz
+  3:1 bandwidth: ${bw3Label.textContent} kHz
+
+Efficiency:
+  Radiation resistance: ${rradLabel.textContent} Ω
+  Ground loss resistance: ${rgroundLabel.textContent} Ω
+  Total resistance: ${rtotalLabel.textContent} Ω
+  Efficiency: ${effLabel.textContent} %
+
+Notes:
+  This summary was generated by KG5IEF’s antenna design tool.
+  Patterns include realistic ground-reflection modeling.
+`;
+}
+
+if (copySummaryBtn) {
+  copySummaryBtn.addEventListener("click", () => {
+    const text = generateTextSummary();
+    navigator.clipboard.writeText(text);
+    alert("Design summary copied to clipboard with callsign KG5IEF.");
   });
-  updateAll();
+}
+
+document.querySelectorAll("input, select").forEach(el => {
+  el.addEventListener("input", updateAll);
+  el.addEventListener("change", updateAll);
 });
+
+updateAll();
 </script>
-<div class="card" style="margin-top:20px;">
-  <h3>Ground Enhancements: Moisture, Conductivity & Alternatives to Radials</h3>
-
-  <p style="font-size:14px; color:#555;">
-    A vertical antenna’s efficiency depends heavily on how easily RF current can return to ground.
-    Radials are the gold standard, but several other techniques can improve conductivity and reduce
-    ground loss — especially on 80 m and 40 m.
-  </p>
-
-  <ul style="font-size:14px; color:#333; line-height:1.45;">
-
-    <li><b>Ground screen (wire mesh)</b> — A sheet of welded wire mesh or hardware cloth placed under
-        the antenna base reduces near-field loss and improves efficiency when full radials aren’t possible.</li>
-
-    <li><b>Conductive fabric / Faraday cloth</b> — A flexible alternative to metal mesh. Useful for
-        portable, temporary, or stealth installations.</li>
-
-    <li><b>Ground rods</b> — Excellent for lightning and DC grounding. Provide only modest RF benefit
-        unless combined with radials or a ground screen.</li>
-
-    <li><b>Radials + ground screen</b> — A small mesh under the base plus even a few radials can
-        outperform a large radial-only system on poor soil.</li>
-
-    <li><b>Short radials + rods</b> — In tight spaces, multiple short radials tied into one or more
-        ground rods still reduce RF loss compared to a rod alone.</li>
-
-    <li><b>Elevated radials</b> — Tuned elevated radials reduce dependence on soil conductivity and
-        often outperform large ground-mounted radial fields.</li>
-
-    <li><b>Watering the ground</b> — Moist soil dramatically improves conductivity. Watering the area
-        around the base and radial field can noticeably improve performance on low bands.</li>
-
-    <li><b>Adding salt to the soil</b> — Saltwater has very high conductivity and can temporarily
-        improve RF performance. <b>Warning:</b> Salt can damage or kill grass and plants.</li>
-
-    <li><b>Saltwater buckets or trenches</b> — A controlled method: bury a shallow trench or place
-        buckets filled with saltwater near the radial field to boost conductivity without spreading salt.</li>
-
-    <li><b>Seasonal moisture advantage</b> — After rain, snowmelt, or during winter, ground
-        conductivity improves naturally. Many operators notice their verticals “wake up” after storms.</li>
-
-  </ul>
-
-  <p style="font-size:13px; color:#777; margin-top:10px;">
-    Rule of thumb: <b>ground rods help safety</b>, but <b>radials, moisture, and ground screens help RF</b>.
-  </p>
-</div>
 
 </body>
 </html>
