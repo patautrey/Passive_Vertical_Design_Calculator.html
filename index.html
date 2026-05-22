@@ -39,6 +39,24 @@
     margin: 0 auto 30px auto;
     height: 400px;
   }
+  #gainSummary table, #gainDetails table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  #gainSummary th, #gainSummary td,
+  #gainDetails th, #gainDetails td {
+    border: 1px solid #999;
+    padding: 6px;
+    text-align: center;
+  }
+  #toggleGainDetails {
+    display: inline-block;
+    margin: 5px 0 15px 0;
+    cursor: pointer;
+    color: #0066cc;
+    text-decoration: underline;
+  }
 </style>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -75,6 +93,11 @@
 <div id="plotsContainer">
   <h2>Radiation Patterns</h2>
   <div id="azimuthPlot"></div>
+
+  <div id="gainSummary"></div>
+  <a href="#" id="toggleGainDetails">Show advanced gain metrics</a>
+  <div id="gainDetails" style="display:none;"></div>
+
   <div id="elevationPlot"></div>
 </div>
 
@@ -93,12 +116,7 @@ function toFeetInches(m) {
   return `${feet} ft ${Math.floor(inches)} ${frac}/16 in`;
 }
 
-// Gain Reference Notes:
-// dBi = gain referenced to an isotropic radiator.
-// dBd = gain referenced to a half-wave dipole.
-// A dipole has +2.15 dBi → dBd = dBi - 2.15.
-// A 1/4-wave vertical ≈ +2.1 dBi ≈ -0.05 to -1.0 dBd.
-
+// Base gain in dBi
 function baseGain(nDir, hasRef) {
   if (!hasRef && nDir === 0) return 2.1;
   if (hasRef && nDir === 0) return 5.0;
@@ -161,13 +179,26 @@ function arrayFactor(theta, phi, k, positions, amps, phases) {
 
 // Azimuth pattern
 function computeAzimuthPattern(lambda, hasRef, nDir) {
+  let angles = [];
+  let dBs = [];
+
+  // Single 1/4-wave vertical: omnidirectional in azimuth
+  if (!hasRef && nDir === 0) {
+    for (let deg = 0; deg < 360; deg += 2) {
+      angles.push(deg);
+      dBs.push(0); // 0 dB everywhere (normalized)
+    }
+    return { angles, dBs };
+  }
+
   let k = 2 * Math.PI / lambda;
   let { positions, amps, phases } = buildArrayModel(hasRef, nDir, lambda);
 
   let theta = Math.PI / 2;
   let ef = verticalElementFactor(theta);
 
-  let angles = [], dBs = [], vals = [], maxVal = 0;
+  let vals = [];
+  let maxVal = 0;
 
   for (let deg = 0; deg < 360; deg += 2) {
     let phi = deg * Math.PI / 180;
@@ -214,11 +245,72 @@ function computeElevationPattern(lambda, hasRef, nDir) {
   return { angles, dBs };
 }
 
-// Plot updater
-function updatePlots(lambda, hasRef, nDir) {
+// Analyze azimuth pattern for gain metrics
+function analyzeAzimuth(az, forwardAbs_dBi) {
+  let angles = az.angles;
+  let dBs = az.dBs;
+
+  // Forward = 0°
+  let fIdx = angles.indexOf(0);
+  if (fIdx === -1) fIdx = 0;
+  let fRel = dBs[fIdx]; // should be 0 dB (normalized)
+  let fAbs_dBi = forwardAbs_dBi;
+  let fAbs_dBd = fAbs_dBi - 2.15;
+
+  // Back = 180°
+  let bIdx = angles.indexOf(180);
+  let bRel = (bIdx !== -1) ? dBs[bIdx] : Math.min(...dBs);
+  let bAbs_dBi = fAbs_dBi + bRel;
+  let fbRatio = fAbs_dBi - bAbs_dBi; // dB
+
+  // -3 dB beamwidth
+  let thr3 = -3;
+  let valid3 = angles.filter((a, i) => dBs[i] >= thr3);
+  let bw3 = valid3.length ? (Math.max(...valid3) - Math.min(...valid3)) : 360;
+
+  // -10 dB beamwidth
+  let thr10 = -10;
+  let valid10 = angles.filter((a, i) => dBs[i] >= thr10);
+  let bw10 = valid10.length ? (Math.max(...valid10) - Math.min(...valid10)) : 360;
+
+  // Side-lobe level: max outside main lobe region (approx)
+  let mainMin = valid3.length ? Math.min(...valid3) : 0;
+  let mainMax = valid3.length ? Math.max(...valid3) : 0;
+  let sideRel = -30;
+  for (let i = 0; i < angles.length; i++) {
+    let a = angles[i];
+    if (a < mainMin || a > mainMax) {
+      if (dBs[i] > sideRel) sideRel = dBs[i];
+    }
+  }
+  let sideAbs_dBi = fAbs_dBi + sideRel;
+  let fsRatio = fAbs_dBi - sideAbs_dBi;
+
+  // Pattern efficiency (rough): average linear gain
+  let sumLin = 0;
+  for (let d of dBs) sumLin += Math.pow(10, d / 10);
+  let avgLin = sumLin / dBs.length;
+  let effPct = avgLin * 100;
+
+  return {
+    forwardAbs_dBi: fAbs_dBi,
+    forwardAbs_dBd: fAbs_dBd,
+    backAbs_dBi: bAbs_dBi,
+    fbRatio: fbRatio,
+    bw3: bw3,
+    bw10: bw10,
+    sideAbs_dBi: sideAbs_dBi,
+    fsRatio: fsRatio,
+    effPct: effPct
+  };
+}
+
+// Plot updater + gain tables
+function updatePlots(lambda, hasRef, nDir, forwardAbs_dBi) {
   let az = computeAzimuthPattern(lambda, hasRef, nDir);
   let el = computeElevationPattern(lambda, hasRef, nDir);
 
+  // Azimuth polar plot
   Plotly.newPlot("azimuthPlot", [{
     type: "scatterpolar",
     r: az.dBs,
@@ -233,6 +325,7 @@ function updatePlots(lambda, hasRef, nDir) {
     }
   });
 
+  // Elevation Cartesian plot
   Plotly.newPlot("elevationPlot", [{
     x: el.angles,
     y: el.dBs,
@@ -243,6 +336,55 @@ function updatePlots(lambda, hasRef, nDir) {
     xaxis: { title: "Elevation Angle (degrees)", range: [0, 90] },
     yaxis: { title: "Relative Gain (dB)", range: [-30, 0], dtick: 5 }
   });
+
+  // Gain analysis
+  let g = analyzeAzimuth(az, forwardAbs_dBi);
+
+  // Simple gain table
+  document.getElementById("gainSummary").innerHTML = `
+    <h3>Gain Summary</h3>
+    <table>
+      <tr>
+        <th>Forward Gain</th>
+        <th>Back-Lobe Gain</th>
+        <th>Front-to-Back Ratio</th>
+        <th>Beamwidth (-3 dB)</th>
+      </tr>
+      <tr>
+        <td>${g.forwardAbs_dBi.toFixed(1)} dBi (${g.forwardAbs_dBd.toFixed(1)} dBd)</td>
+        <td>${g.backAbs_dBi.toFixed(1)} dBi</td>
+        <td>${g.fbRatio.toFixed(1)} dB</td>
+        <td>${g.bw3.toFixed(1)}°</td>
+      </tr>
+    </table>
+  `;
+
+  // Advanced gain table
+  document.getElementById("gainDetails").innerHTML = `
+    <h3>Advanced Gain Metrics</h3>
+    <table>
+      <tr>
+        <th>Forward Gain</th>
+        <th>Back-Lobe Gain</th>
+        <th>Side-Lobe Level</th>
+        <th>Beamwidth (-3 dB)</th>
+        <th>Beamwidth (-10 dB)</th>
+        <th>F/B Ratio</th>
+        <th>F/S Ratio</th>
+        <th>Pattern Efficiency</th>
+      </tr>
+      <tr>
+        <td>${g.forwardAbs_dBi.toFixed(1)} dBi (${g.forwardAbs_dBd.toFixed(1)} dBd)</td>
+        <td>${g.backAbs_dBi.toFixed(1)} dBi</td>
+        <td>${g.sideAbs_dBi.toFixed(1)} dBi</td>
+        <td>${g.bw3.toFixed(1)}°</td>
+        <td>${g.bw10.toFixed(1)}°</td>
+        <td>${g.fbRatio.toFixed(1)} dB</td>
+        <td>${g.fsRatio.toFixed(1)} dB</td>
+        <td>${g.effPct.toFixed(1)} %</td>
+      </tr>
+    </table>
+  `;
 }
 
 // Main calculator
@@ -275,7 +417,7 @@ function calculate() {
   let finalGain_dBd = finalGain_dBi - 2.15;
 
   document.getElementById("gainLine").innerHTML =
-    `${finalGain_dBi.toFixed(1)} dBi (${finalGain_dBd.toFixed(1)} dBd) — vertical Yagi at ${fMHz.toFixed(3)} MHz`;
+    `${finalGain_dBi.toFixed(1)} dBi (${finalGain_dBd.toFixed(1)} dBd) — vertical configuration at ${fMHz.toFixed(3)} MHz`;
 
   document.getElementById("summary").innerHTML = `
     <b>Passive Vertical / Vertical Yagi Array</b><br>
@@ -289,7 +431,7 @@ function calculate() {
     Radial Length: ${radialLen.toFixed(3)} m = ${toFeetInches(radialLen)}
   `;
 
-  // Build table
+  // Build element table
   let html = `<table>
     <tr>
       <th>Element</th><th>Length (m)</th><th>Length (ft/in)</th>
@@ -335,8 +477,8 @@ function calculate() {
   html += `</table>`;
   document.getElementById("tableContainer").innerHTML = html;
 
-  // Update plots
-  updatePlots(lambda, hasRef, nDir);
+  // Update plots + gain tables
+  updatePlots(lambda, hasRef, nDir, finalGain_dBi);
 
   // Build instructions
   document.getElementById("build").innerHTML = `
@@ -349,12 +491,11 @@ function calculate() {
     • Keep metal at least 0.1 λ away.<br><br>
     <b>dBi vs dBd</b><br>
     • dBi = isotropic reference.<br>
-    • dBd = dipole reference.<br>
-    • dBd = dBi − 2.15.<br>
+    • dBd = dipole reference (dBd = dBi − 2.15).<br>
   `;
 }
 
-// Download text file
+// Download text file (summary only)
 function downloadFile() {
   let text = document.getElementById("summary").innerText;
   let blob = new Blob([text], {type: "text/plain"});
@@ -369,6 +510,19 @@ document.getElementById("freq").addEventListener("input", calculate);
 document.getElementById("directors").addEventListener("change", calculate);
 document.getElementById("useReflector").addEventListener("change", calculate);
 document.getElementById("elevatedRadials").addEventListener("change", calculate);
+
+// Toggle advanced gain metrics
+document.getElementById("toggleGainDetails").addEventListener("click", function(e) {
+  e.preventDefault();
+  let d = document.getElementById("gainDetails");
+  if (d.style.display === "none" || d.style.display === "") {
+    d.style.display = "block";
+    this.textContent = "Hide advanced gain metrics";
+  } else {
+    d.style.display = "none";
+    this.textContent = "Show advanced gain metrics";
+  }
+});
 
 // Auto-generate plots on page load
 window.addEventListener("load", calculate);
