@@ -424,7 +424,8 @@
   <!-- TEACHING CARDS -->
   <div class="card" style="margin-top:20px;">
     <h3>How to Improve Your Vertical Antenna Performance</h3>
-    <ol style="font-size:14px; color:#333;       <li><b>Add a reflector</b> — Improves front‑to‑back ratio and pushes more signal forward.</li>
+    <ol style="font-size:14px; color:#333;">
+      <li><b>Add a reflector</b> — Improves front‑to‑back ratio and pushes more signal forward.</li>
       <li><b>Add a director</b> — Narrows the beam and increases forward gain.</li>
       <li><b>Add more directors</b> — Each one adds a bit more gain and directivity (with diminishing returns).</li>
       <li><b>Add more radials</b> — Reduces ground loss and increases radiation efficiency dramatically.</li>
@@ -791,7 +792,20 @@ function updateAll() {
     el.push(th);
     elGain.push(gain + db(Math.max(E, 1e-6)));
   }
-  Plotly.newPlot("elevationPlot",  /* ============================================================
+
+  Plotly.newPlot("elevationPlot", [{
+    x: el,
+    y: elGain,
+    type: "scatter",
+    mode: "lines",
+    line: {color: "#d7263d"}
+  }], {
+    margin: {t: 20},
+    xaxis: {title: "Elevation (°)"},
+    yaxis: {title: "Gain (dBi)"}
+  });
+
+  /* ============================================================
      3D PATTERN
      ============================================================ */
   const theta = [];
